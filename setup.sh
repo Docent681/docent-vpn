@@ -1,48 +1,67 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail  # выход при ошибке, неинициализированные переменные, ошибки пайпов
 
-# Проверка, что скрипт запущен от root
-if [[ $EUID -ne 0 ]]; then
-   echo "Этот скрипт нужно запускать от root: sudo $0"
-   exit 1
+# Проверка, что скрипт запущен через sudo от обычного пользователя
+if [[ -z "${SUDO_USER:-}" ]]; then
+    echo "Ошибка: скрипт должен быть запущен через sudo, а не от root напрямую."
+    exit 1
 fi
+
 USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+LOGDIR="$USER_HOME/docent-vpn"
+mkdir -p "$LOGDIR"
+LOGFILE="$LOGDIR/installation.log"
 
-# Проверка наличия рабочего каталога
-if [[ ! -d "$USER_HOME/docent-vpn" ]] ; then
-    echo "Создаем каталог $USER_HOME/docent-vpn/"
-    mkdir -p "$USER_HOME/docent-vpn"
+# Сброс лог-файла перед установкой
+true > "$LOGFILE"
+chown "$SUDO_USER":"$SUDO_USER" "$LOGFILE"
+
+echo "Устанавливаем сервер Outline VPN (лог: $LOGFILE)..."
+
+# Запуск установки с сохранением stdout и stderr в лог
+yes | bash -c "$(wget -qO- https://raw.githubusercontent.com/OutlineFoundation/outline-apps/master/server_manager/install_scripts/install_server.sh)" &> "$LOGFILE"
+
+# Проверка успешности установки
+if [[ -f /opt/outline/access.txt ]]; then
+    echo "Outline VPN успешно установлен."
+else
+    echo "Ошибка: установка Outline не завершилась успешно. Смотрите лог $LOGFILE"
+    exit 1
 fi
 
-# 1. Установка сервера Outline Vpn
-echo "Устанавливаем сервер Outline Vpn..."
+# Настройка ufw, если он присутствует
+if command -v ufw &>/dev/null; then
+    echo "В системе обнаружен UFW. Необходимо открыть порты для Outline."
+    read -r -p "Настроить порты автоматически? [Y/n]: " AUTO_FIREWALL_CONF
 
-if [ -f "$USER_HOME/docent-vpn/installation.log" ]; then
-    echo "Создаем файл логгирования установки $USER_HOME/docent-vpn/installation.log"
-    touch "$USER_HOME/docent-vpn/installation.log"
+    while [[ ! "$AUTO_FIREWALL_CONF" =~ ^([yYnN]?)$ ]]; do
+        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " AUTO_FIREWALL_CONF
+    done
+
+    if [[ -z "$AUTO_FIREWALL_CONF" || "$AUTO_FIREWALL_CONF" =~ ^[yY]$ ]]; then
+        echo "Настраиваю UFW..."
+        grep 'ufw allow' "$LOGFILE" | sed -e 's/^[[:space:]]*sudo //' -e 's/[[:space:]]*$//' | while read -r cmd; do
+            if [[ -n "$cmd" ]]; then
+                echo "Выполняю: $cmd"
+                $cmd || echo "Предупреждение: команда '$cmd' завершилась с ошибкой"
+            fi
+        done
+        echo "Порты UFW настроены."
+    else
+        echo "Настройка UFW пропущена. Не забудьте открыть порты вручную."
+    fi
 fi
 
-yes | bash -c "$(wget -qO- https://raw.githubusercontent.com/OutlineFoundation/outline-apps/master/server_manager/install_scripts/install_server.sh)" > "$USER_HOME/docent-vpn/installation.log"
-
-echo "Outline Vpn успешно установлен. Подробности об установке можно просмотреть в $USER_HOME/docent-vpn/installation.log"
-
-if [[ -n "$(which ufw)" ]]; then
-    echo "В системе установлен фаерволл, необходимо пробросить порты для Outline Vpn. Сделать это автоматически?[Y:n]:"
-    read -r AUTO_FIREWALL_CONF
+# Вывод ключевой информации о сервере
+echo "=============================="
+echo "Информация о сервере Outline:"
+echo "Файл параметров: /opt/outline/access.txt"
+if command -v jq &>/dev/null; then
+    jq '.' /opt/outline/access.txt
+else
+    cat /opt/outline/access.txt
 fi
-
-while [[ ($AUTO_FIREWALL_CONF != "y") || ($AUTO_FIREWALL_CONF != "Y") || ($AUTO_FIREWALL_CONF != "n") || ($AUTO_FIREWALL_CONF != "N") || ($AUTO_FIREWALL_CONF != "") ]]
-do
-    echo "Укажите, нужно ли настроить порты для Outline Vpn?[Y:n]:"
-    read -r AUTO_FIREWALL_CONF
-done
-
-if [[ ($AUTO_FIREWALL_CONF != "y") || ($AUTO_FIREWALL_CONF != "Y") || ($AUTO_FIREWALL_CONF != "") ]]; then
-    bash -c "{$(cat $USER_HOME/docent-vpn/installation.log | grep ufw | cut -c 5- )}"
-    echo "Порты были успешно проброшены"
-fi
-
-# echo "Основная информация о сервере:"
-# echo "API URL сервера: $(cat $USER_HOME/docent-vpn/installation.log | grep apiUrl)"
-# echo "IP адресс сервера: "
+echo "=============================="
+echo "Установка завершена."
 
 exit 0
