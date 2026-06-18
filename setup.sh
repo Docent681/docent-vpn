@@ -52,6 +52,36 @@ if command -v ufw &>/dev/null; then
     fi
 fi
 
+#Установка и конфигурация веб-сервера nginx
+echo "Проверяем наличие nginx..."
+if command -v nginx &>/dev/null; then
+    echo "nginx уже установлен в системе."
+else
+    echo "nginx не обнаружен."
+    read -r -p "Установить nginx? [Y/n]: " INSTALL_NGINX
+    # Проверка ввода: Y, N или пусто (Enter)
+    while [[ ! "$INSTALL_NGINX" =~ ^([yYnN]?)$ ]]; do
+        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " INSTALL_NGINX
+    done
+
+    if [[ -z "$INSTALL_NGINX" || "$INSTALL_NGINX" =~ ^[yY]$ ]]; then
+        if command -v apt &>/dev/null; then
+            echo "Обновляем список пакетов и устанавливаем nginx..."
+            apt update -y && apt install -y nginx
+            if command -v nginx &>/dev/null; then
+                echo "nginx успешно установлен."
+            else
+                echo "Ошибка: не удалось установить nginx. Проверьте логи."
+            fi
+        else
+            echo "Не удалось автоматически установить nginx: пакетный менеджер apt не найден."
+            echo "Пожалуйста, установите nginx вручную."
+        fi
+    else
+        echo "Установка nginx пропущена."
+    fi
+fi
+
 # Вывод ключевой информации о сервере
 echo "=============================="
 echo "Информация о сервере Outline:"
