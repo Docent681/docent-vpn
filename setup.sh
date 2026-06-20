@@ -82,7 +82,7 @@ else
 fi
 
 echo "Проверяем наличие postgresql..."
-if command -v postgresql &>/dev/null; then
+if command -v psql &>/dev/null; then
     echo "postgresql уже установлен в системе."
 else
     echo "postgresql не обнаружен."
