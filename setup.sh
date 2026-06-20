@@ -18,8 +18,7 @@ chown "$SUDO_USER":"$SUDO_USER" "$LOGFILE"
 
 echo "Устанавливаем сервер Outline VPN (лог: $LOGFILE)..."
 
-# Запуск установки с сохранением stdout и stderr в лог
-yes | bash -c "$(wget -qO- https://raw.githubusercontent.com/OutlineFoundation/outline-apps/master/server_manager/install_scripts/install_server.sh)" &> "$LOGFILE"
+yes | bash -c "$(wget -qO- https://raw.githubusercontent.com/OutlineFoundation/outline-apps/master/server_manager/install_scripts/install_server.sh)" &>> "$LOGFILE"
 
 # Проверка успешности установки
 if [[ -f /opt/outline/access.txt ]]; then
@@ -67,7 +66,7 @@ else
     if [[ -z "$INSTALL_NGINX" || "$INSTALL_NGINX" =~ ^[yY]$ ]]; then
         if command -v apt &>/dev/null; then
             echo "Обновляем список пакетов и устанавливаем nginx..."
-            apt update -y && apt install -y nginx
+            apt update -y && apt install -y nginx &>> "$LOGFILE"
             if command -v nginx &>/dev/null; then
                 echo "nginx успешно установлен."
             else
@@ -81,6 +80,36 @@ else
         echo "Установка nginx пропущена."
     fi
 fi
+
+echo "Проверяем наличие postgresql..."
+if command -v postgresql &>/dev/null; then
+    echo "postgresql уже установлен в системе."
+else
+    echo "postgresql не обнаружен."
+     read -r -p "Установить postgresql? [Y/n]: " INSTALL_SQL
+    # Проверка ввода: Y, N или пусто (Enter)
+    while [[ ! "$INSTALL_SQL" =~ ^([yYnN]?)$ ]]; do
+        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " INSTALL_SQL
+    done
+
+    if [[ -z "$INSTALL_SQL" || "$INSTALL_SQL" =~ ^[yY]$ ]]; then
+        if command -v apt &>/dev/null; then
+            echo "Обновляем список пакетов и устанавливаем postgresql..."
+            apt update -y && apt install -y postgresql postgresql-contrib &>> "$LOGFILE"
+            if command -v nginx &>/dev/null; then
+                echo "postgresql успешно установлен."
+            else
+                echo "Ошибка: не удалось установить postgresql. Проверьте логи."
+            fi
+        else
+            echo "Не удалось автоматически установить postgresql: пакетный менеджер apt не найден."
+            echo "Пожалуйста, установите postgresql вручную."
+        fi
+    else
+        echo "Установка postgresql пропущена."
+    fi
+fi
+
 
 # Вывод ключевой информации о сервере
 echo "=============================="

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block body %}
+<h1>Docent-vpn - веб-интерфейс для управления своим Vpn-сервером</h1>
+<h2>Регистрация нового пользователя в системе</h2>
+<form action="{{ url_for('register') }}"   method="POST">
+    <p>
+        <label for="username"> Логин: </label>
+        <input type="text" id="username" name="username" required>
+    </p>
+
+    <p>
+        <label for="email"> Почта: </label>
+        <input type="email" id="email" name="email" required>
+    </p>
+
+    <p>
+        <label for="password"> Пароль: </label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+    </p>
+
+    <p>
+        <label for="password_repeat"> Повторите пароль: </label>
+        <input type="password" id="password_repeat" name="password_repeat" required autocomplete="current-password">
+    </p>
+
+    <p>
+        <button type="submit"> Зарегестрироваться </button>
+    </p>
+</form>
+{% endblock %}
