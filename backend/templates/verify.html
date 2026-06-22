@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block body %}
+<h1>Подтверждение регистрации</h1>
+<p>
+    На вашу почту был отправлен код подтверждения регистрации. Пожалуйста, введите этот код ниже
+</p>
+<form action="{{ url_for('verify') }}"   method="POST">
+    <p>
+        <label for="user_code"> Код: </label>
+        <input type="text" id="user_code" name="user_code" required>
+    </p>
+    <p>
+        <button type="submit"> Подтвердить </button>
+    </p>
+</form>
+{% endblock %}

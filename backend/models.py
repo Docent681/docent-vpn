@@ -9,6 +9,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    is_confirmed = db.Column(db.Boolean, default=False)
 
     def set_username(self, username):
         self.username = username
@@ -16,20 +17,33 @@ class User(db.Model):
     def set_email(self, email):
         self.email = email
 
-    def set_status(self, status):
+    def set_is_admin(self, status):
         if status:
             self.is_admin = True
         else:
             self.is_admin = False
 
-    def get_username(self, username):
+    def set_is_confirmed(self, status):
+        if status:
+            self.is_confirmed= True
+        else:
+            self.is_confirmed= False
+
+
+    def get_username(self):
         return self.username
 
-    def get_email(self, email):
+    def get_id(self):
+        return self.id
+
+    def get_email(self):
         return self.email
 
-    def get_status(self, status):
+    def get_is_admin(self):
         return self.is_admin
+
+    def get_is_confirmed(self):
+        return self.is_confirmed
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
