@@ -1,6 +1,53 @@
 from extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
+class Key(db.Model):
+    __tablename__ = 'keys'
+
+    id = db.Column(db.Integer, primary_key=True)
+    keyname = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(64), unique=False, nullable=False)
+
+    def set_keyname(self, keyname):
+        self.keyname = keyname
+
+    def set_username(self, username):
+        self.username = username
+
+    def get_id(self):
+        return self.id
+
+    def get_keyname(self):
+        return self.keyname
+
+    def get_username(self):
+        return self.username
+
+    def __repr__(self):
+        return f'<Key {self.keyname}>'
+
+class Request(db.Model):
+    __tablename__ = 'requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    quantity = db.Column(db.Integer, unique=False, nullable=False)
+    description = db.Column(db.String(1024), unique=False, nullable=True)
+
+    def set_quantity(self, quantity):
+        self.quantity = quantity
+
+    def set_description(self, description=""):
+        self.description = description
+
+    def get_quantity(self):
+        return self.quantity
+
+    def get_description(self):
+        return self.description
+
+    def __repr__(self):
+        return f'<Request {self.description}>'
+
 class User(db.Model):
     __tablename__ = 'users'
 

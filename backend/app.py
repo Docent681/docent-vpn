@@ -10,7 +10,7 @@ app.config.from_object(Config)
 db.init_app(app)
 mail.init_app(app)
 migrate.init_app(app, db)
-from models import User
+from models import User, Request, Key
 
 #Действия при прямом входе по URL
 @app.route('/')
