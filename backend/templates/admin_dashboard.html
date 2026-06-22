@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block body %}
+<h1>Личный кабинет администратора</h1>
+<hr>
+<h2>База пользователей</h2>
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Логин</th>
+        <th>Почта</th>
+        <th>Админ</th>
+        <th>Подтвержден</th>
+        <th>Удалить пользователя</th>
+    </tr>
+    <tr>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+    </tr>
+</table>
+<br>
+<h2>База ключей</h2>
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Ключ</th>
+        <th>Логин пользователя</th>
+        <th>Удалить ключ</th>
+    </tr>
+    <tr>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+    </tr>
+</table>
+<h2>Лог действий пользователей</h2>
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Логин</th>
+        <th>Действие пользователя</th>
+    </tr>
+    <tr>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+    </tr>
+</table>
+<h2>Активные запросы пользователей</h2>
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Логин</th>
+        <th>Количество ключей</th>
+        <th>Описание</th>
+        <th>Принять запрос</th>
+        <th>Сообщение пользователю</th>
+    </tr>
+    <tr>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
+    </tr>
+</table>
+
+<h2>Создать нового администратора</h2>
+<form action="{{ url_for('admin_dashboard') }}"   method="POST">
+    <p>
+        <label for="username"> Логин: </label>
+        <input type="text" id="username" name="username" required>
+    </p>
+
+    <p>
+        <label for="email"> Почта: </label>
+        <input type="email" id="email" name="email" required>
+    </p>
+
+    <p>
+        <label for="password"> Пароль: </label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+    </p>
+
+    <p>
+        <label for="password_repeat"> Повторите пароль: </label>
+        <input type="password" id="password_repeat" name="password_repeat" required autocomplete="current-password">
+    </p>
+
+    <p>
+        <button type="submit"> Зарегистрировать нового администратора </button>
+    </p>
+</form>
+
+{% endblock %}

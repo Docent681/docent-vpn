@@ -122,12 +122,12 @@ def login():
 #Основная страница пользователя
 @app.route('/user_dashboard')
 def user_dashboard():
-    return "Здесь будет меню для пользователя"
+    return render_template('user_dashboard.html')
 
 #Основная страница администратора
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    return "Здесь будет меню для администратора"
+    return render_template('admin_dashboard.html')
 
 
 if __name__ == "__main__":
