@@ -113,6 +113,9 @@ def login():
             error = "У вас нет прав администратора"
 
         else:
+            session.clear()
+            session['current_user_login'] = username
+
             if user_type == 'user_choice':
                 return redirect(url_for('user_dashboard'))
             return redirect(url_for("admin_dashboard"))
@@ -120,12 +123,42 @@ def login():
     return render_template('login.html', error=error)
 
 #Основная страница пользователя
-@app.route('/user_dashboard')
+@app.route('/user_dashboard', methods=['GET'])
 def user_dashboard():
-    return render_template('user_dashboard.html')
+    current_user = session.get('current_user_login')
+    session.clear()
+    error = None
+    keys = Key.query.filter(Key.username == current_user).all()
+
+
+
+
+    session['current_user_login'] = current_user
+    return render_template('user_dashboard.html', keys=keys)
+
+@app.route('/delete_key', methods=['POST'])
+def delete_key():
+    current_user = session.get('current_user_login')
+    session.clear()
+
+    key_id = request.form.get('key_id')
+    if not key_id:
+        return redirect(url_for('user_dashboard'))
+    key = Key.query.filter(Key.id == key_id).first()
+    if key is None:
+        pass
+    else:
+        if key.username != current_user:
+            pass
+
+        db.session.delete(key)
+        db.session.commit()
+
+    return redirect(url_for('user_dashboard'))
+
 
 #Основная страница администратора
-@app.route('/admin_dashboard')
+@app.route('/admin_dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     return render_template('admin_dashboard.html')
 

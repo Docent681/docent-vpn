@@ -8,19 +8,31 @@
 <h1>Личный кабинет </h1>
 <hr>
 <h2>Доступные ключи</h2>
+<h2>Доступные ключи</h2>
+{% if keys %}
 <table>
     <tr>
         <th>Ключ</th>
-        <th>Отозвать</th>
+        <th>Действие</th>
     </tr>
+    {% for key in keys %}
     <tr>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
+        <td>{{ key.get_keyname() }}</td>
+        <td>
+            <form action="{{ url_for('delete_key') }}" method="POST">
+                <input type="hidden" name="key_id" value="{{ key.id }}">
+                <button type="submit" onclick="return confirm('Удалить ключ?')">Отозвать</button>
+            </form>
+        </td>
     </tr>
+    {% endfor %}
 </table>
-<br>
+{% else %}
+<p>У вас пока нет ключей.</p>
+{% endif %}<br>
+
 <h2>Запросить ключи</h2>
-<form action="{{ url_for('user_dashboard') }}" method="POST">
+<form action="{{ url_for('request_key') }}" method="POST">
     <p>
         <label for="key_amount">Количество ключей: </label>
         <input type="number" id="key_amount" name="key_amount" required>
