@@ -9,7 +9,10 @@ fi
 
 USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 PROJECT_DIR="$USER_HOME/docent-vpn"
-mkdir -p "$PROJECT_DIR"
+if [[ ! -d "$PROJECT_DIR" ]]; then
+	mkdir -p "$PROJECT_DIR"
+fi
+touch "$PROJECT_DIR/installation.log"
 LOGFILE="$PROJECT_DIR/installation.log"
 chown "$SUDO_USER":"$SUDO_USER" "$LOGFILE" "$PROJECT_DIR"
 
@@ -71,7 +74,7 @@ else
         if command -v apt &>/dev/null; then
             echo "Обновляем список пакетов и устанавливаем nginx..."
             echo "ЛОГ УСТАНОВКИ NGINX" &>> "$LOGFILE"
-            apt update -y && apt install -y nginx &>> "$LOGFILE"
+	    { apt update -y && apt install -y nginx; } &>> "$LOGFILE"
             if command -v nginx &>/dev/null; then
                 echo "nginx успешно установлен."
             else
@@ -119,7 +122,7 @@ else
     if [[ -z "$INSTALL_SQL" || "$INSTALL_SQL" =~ ^[yY]$ ]]; then
         if command -v apt &>/dev/null; then
             echo "Обновляем список пакетов и устанавливаем postgresql..."
-            apt update -y && apt install -y postgresql postgresql-contrib &>> "$LOGFILE"
+	    { apt update -y && apt install -y postgresql postgresql-contrib; } &>> "$LOGFILE"
             if command -v psql &>/dev/null; then
                 echo "postgresql успешно установлен."
             else
@@ -143,19 +146,20 @@ if command -v psql &>/dev/null; then
         if [[ -z "$SQL_USER" ]]; then
             SQL_USER="$SUDO_USER"
         fi
-        read -r -p "Введите имя базы данных (по умолчанию: '<текущий пользователь>_db')" SQL_DB_NAME
+        read -r -p "Введите имя базы данных (по умолчанию: '<текущий пользователь>_db'): " SQL_DB_NAME
         if [[ -z "$SQL_DB_NAME" ]]; then
             SQL_DB_NAME="$SUDO_USER"_db
         fi
-        read -r -s -p "Введите пароль пользователя базы данных" SQL_USER_PASSWORD
+        read -r -s -p "Введите пароль пользователя базы данных: " SQL_USER_PASSWORD
+	echo ""
         if [[ -z "$SQL_USER_PASSWORD" ]]; then
             echo "Вы не ввели пароль, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите почту, которая будет использоваться для двухэтапной аутентификации при регистрации" EMAIL
+        read -r -p "Введите почту, которая будет использоваться для двухэтапной аутентификации при регистрации: " EMAIL
         if [[ -z "$EMAIL" ]]; then
             echo "Вы не ввели почту, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте)" EMAIL_PASSWORD
+        read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте): " EMAIL_PASSWORD
         if [[ -z "$EMAIL_PASSWORD" ]]; then
             echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
@@ -177,59 +181,122 @@ if command -v psql &>/dev/null; then
         echo "Создаем новую роль и базу данных в PostgreSQL..."
         sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';"
         sudo -u postgres psql -c "CREATE DATABASE $SQL_DB_NAME;"
+	sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
+	sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
+	sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+
+
         echo "Конфигурация PostgreSQL была завершена"
     fi
 else
     echo "PostgreSQL не установлен. Пропускаем конфигурацию"
 fi
 
+# Установка системных зависимостей для Python
+echo "Проверяем и устанавливаем python3-venv и python3-pip..."
+if ! command -v python3 &>/dev/null; then
+    echo "Python3 не найден. Установите python3 вручную."
+    exit 1
+fi
+
+if command -v apt &>/dev/null; then
+    # Устанавливаем пакеты, если они ещё не установлены
+    if ! dpkg -l python3-venv &>/dev/null; then
+        echo "Устанавливаем python3-venv..."
+        apt update -y &>> "$LOGFILE" && apt install -y python3-venv &>> "$LOGFILE"
+    fi
+    if ! dpkg -l python3-pip &>/dev/null; then
+        echo "Устанавливаем python3-pip..."
+        apt install -y python3-pip &>> "$LOGFILE"
+    fi
+else
+    echo "Пакетный менеджер apt не обнаружен. Установите python3-venv и python3-pip вручную."
+    exit 1
+fi
+
 #Конфигурация python окружения
-echo "Конфигурируем и устанавливаем библиотеки python-окружения..."
+echo "Конфигурируем и устанавливаем библиотеки Python-окружения..."
+
+# Проверяем, существует ли уже venv
 if [[ -d "$PROJECT_DIR/backend/.venv" ]]; then
-    echo "Каталог python окружения .venv уже существует, пропускаем конфигурацию"
+    echo "Каталог python окружения .venv уже существует, пропускаем создание."
 else
-    cd "$PROJECT_DIR/backend"
-    python3 -m venv .venv
-    source "$PROJECT_DIR/backend/.venv/bin/activate"
-    if [[ -f "$PROJECT_DIR/backend/requirements.txt" ]]; then
-        echo "ЛОГ УСТАНОВКИ PYTHON БИБЛИОТЕК С ПОМОЩЬЮ PIP" &>> $LOGFILE
-        echo "Устанавливаем библиотеки. Может занять некоторое время..."
-        pip install -r "$PROJECT_DIR/backend/requirements.txt" &>> $LOGFILE
-        echo "Библиотеки были успешно установлены"
-    else
-        echo "requirements.txt для pip не найден. Установите необходимые библиотеки вручную"
+    echo "Создаём виртуальное окружение от имени пользователя $SUDO_USER..."
+    sudo -u "$SUDO_USER" python3 -m venv "$PROJECT_DIR/backend/.venv"
+    if [[ $? -ne 0 ]]; then
+        echo "Ошибка создания виртуального окружения."
+        exit 1
     fi
+fi
 
-#Конфигурация flask-migrate для работы базы данных
+# Устанавливаем зависимости (pip из venv)
+if [[ -f "$PROJECT_DIR/backend/requirements.txt" ]]; then
+    echo "Устанавливаем библиотеки (может занять время)..."
+    sudo -u "$SUDO_USER" "$PROJECT_DIR/backend/.venv/bin/pip" install -r "$PROJECT_DIR/backend/requirements.txt" &>> "$LOGFILE"
+    if [[ $? -ne 0 ]]; then
+        echo "Ошибка установки Python-библиотек. Смотрите лог."
+        exit 1
+    fi
+    echo "Библиотеки успешно установлены."
+else
+    echo "Файл requirements.txt не найден. Пропускаем установку."
+fi
+
+# Инициализация и выполнение миграций Flask
+echo "Настраиваем базу данных (Flask-Migrate)..."
+if [[ -d "$PROJECT_DIR/backend/migrations" ]]; then
+    echo "Каталог migrations уже существует, пропускаем инициализацию."
+else
+    echo "Инициализируем миграции..."
+    sudo -u "$SUDO_USER" bash -c "
+        cd \"$PROJECT_DIR/backend\"
+        export FLASK_APP=app.py
+        .venv/bin/flask db init
+    " &>> "$LOGFILE"
+    if [[ $? -ne 0 ]]; then
+        echo "Ошибка инициализации миграций. Смотрите лог."
+        exit 1
+    fi
+fi
+
+echo "Обновляем таблицы базы данных..."
+sudo -u "$SUDO_USER" bash -c "
+    cd \"$PROJECT_DIR/backend\"
     export FLASK_APP=app.py
-
-    if [[ -d "$PROJECT_DIR/backend/migrations" ]]; then
-        echo "Каталог migrations уже существует, пропускаем конфигурацию"
-    else
-        echo "Создаем каталог migrations для работы базы данных"
-        flask db init
-    fi
-
-    echo "Обновляем таблицы базы данных..."
-    flask db migrate -m "Update from setup.sh"
-    flask db upgrade
-
-    deactivate
-    cd -
+    .venv/bin/flask db migrate -m 'Update from setup.sh'
+    .venv/bin/flask db upgrade
+" &>> "$LOGFILE"
+if [[ $? -ne 0 ]]; then
+    echo "Ошибка применения миграций. Смотрите лог."
+    exit 1
 fi
 
+echo "Конфигурация Python-окружения завершена."
 
-
-#Вывод ключевой информации о сервере
-echo "=============================="
-echo "Информация о сервере Outline:"
-echo "Файл параметров: /opt/outline/access.txt"
-if command -v jq &>/dev/null; then
-    jq '.' /opt/outline/access.txt
-else
-    cat /opt/outline/access.txt
-fi
+#Вывод итоговой информации
 echo "=============================="
 echo "Установка завершена."
+echo "Информация о сервере"
+
+if [[ -f /opt/outline/access.txt ]]; then
+    API_URL=$(sed -n '2p' /opt/outline/access.txt)
+
+    if [[ -n "$API_URL" ]]; then
+        echo "API URL: $API_URL"
+
+        API_HOST_PORT=$(echo "$API_URL" | awk -F/ '{print $3}')
+        API_HOST=$(echo "$API_HOST_PORT" | cut -d: -f1)
+        API_PORT=$(echo "$API_HOST_PORT" | cut -sd: -f2)
+
+        echo "IP-адрес сервера: $API_HOST"
+        if [[ -n "$API_PORT" ]]; then
+            echo "Служебный порт (API): $API_PORT"
+        fi
+    fi
+else
+	echo "Не получилось обратиться к access.txt"
+fi
+echo "=============================="
+
 
 exit 0
