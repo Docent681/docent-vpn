@@ -126,12 +126,9 @@ def login():
 @app.route('/user_dashboard', methods=['GET'])
 def user_dashboard():
     current_user = session.get('current_user_login')
-    session.clear()
-    error = None
+    if not current_user:
+        return redirect(url_for('login'))
     keys = Key.query.filter(Key.username == current_user).all()
-
-
-
 
     session['current_user_login'] = current_user
     return render_template('user_dashboard.html', keys=keys)
@@ -139,23 +136,41 @@ def user_dashboard():
 @app.route('/delete_key', methods=['POST'])
 def delete_key():
     current_user = session.get('current_user_login')
-    session.clear()
+    if not current_user:
+        return redirect(url_for('login'))
 
     key_id = request.form.get('key_id')
     if not key_id:
         return redirect(url_for('user_dashboard'))
-    key = Key.query.filter(Key.id == key_id).first()
+    key = Key.query.get(int(key_id))
     if key is None:
         pass
     else:
         if key.username != current_user:
             pass
-
-        db.session.delete(key)
-        db.session.commit()
+        else:
+            db.session.delete(key)
+            db.session.commit()
 
     return redirect(url_for('user_dashboard'))
 
+@app.route('/request_key', methods=['POST'])
+def request_key():
+    current_user = session.get('current_user_login')
+    if not current_user:
+        return redirect(url_for('login'))
+
+    key_amount = request.form.get("key_amount")
+    description = request.form.get("description")
+
+    req = Request()
+    req.set_username(current_user)
+    req.set_quantity(key_amount)
+    req.set_description(str(description))
+
+    db.session.add(req)
+    db.session.commit()
+    return redirect(url_for('user_dashboard'))
 
 #Основная страница администратора
 @app.route('/admin_dashboard', methods=['GET', 'POST'])

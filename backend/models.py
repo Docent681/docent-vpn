@@ -30,6 +30,7 @@ class Request(db.Model):
     __tablename__ = 'requests'
 
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=False, nullable=False)
     quantity = db.Column(db.Integer, unique=False, nullable=False)
     description = db.Column(db.String(1024), unique=False, nullable=True)
 
@@ -39,6 +40,8 @@ class Request(db.Model):
     def set_description(self, description=""):
         self.description = description
 
+    def set_username(self, username):
+        self.username = username
     def get_quantity(self):
         return self.quantity
 
