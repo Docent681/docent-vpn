@@ -173,9 +173,32 @@ def request_key():
     return redirect(url_for('user_dashboard'))
 
 #Основная страница администратора
-@app.route('/admin_dashboard', methods=['GET', 'POST'])
+@app.route('/admin_dashboard', methods=['GET'])
 def admin_dashboard():
-    return render_template('admin_dashboard.html')
+    current_admin = session.get('current_user_login')
+    if not current_admin:
+        return redirect(url_for('login'))
+    keys = Key.query.all()
+    users = User.query.all()
+    reqs = Request.query.all()
+
+    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys )
+
+@app.route('/admin_delete_user', methods=['POST'])
+def admin_delete_user():
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin_delete_key', methods=['POST'])
+def admin_delete_key():
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin_answer_request', methods=['POST'])
+def admin_answer_request():
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/create_new_admin', methods=['POST'])
+def create_new_admin():
+    return redirect(url_for('admin_dashboard'))
 
 
 if __name__ == "__main__":

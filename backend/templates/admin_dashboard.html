@@ -8,6 +8,7 @@
 <h1>Личный кабинет администратора</h1>
 <hr>
 <h2>База пользователей</h2>
+{% if users %}
 <table>
     <tr>
         <th>Id</th>
@@ -15,19 +16,40 @@
         <th>Почта</th>
         <th>Админ</th>
         <th>Подтвержден</th>
-        <th>Удалить пользователя</th>
+        <th>Действие</th>
     </tr>
+    {% for user in users %}
     <tr>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
+        <td>
+            {{ user.id }}
+        </td>
+        <td>
+            {{ user.username }}
+        </td>
+        <td>
+            {{ user.email }}
+        </td>
+        <td>
+            {{ user.is_admin }}
+        </td>
+        <td>
+            {{ user.is_confirmed }}
+        </td>
+        <td>
+            <form action="{{ url_for('admin_delete_user') }}" method="POST">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit" onclick="return confirm('Удалить пользователя?')">Удалить</button>
+            </form>
+        </td>
     </tr>
+    {% endfor %}
 </table>
+{% else %}
+<p>Пользователей в системе не обнаружено</p>
+{% endif %}
 <br>
 <h2>База ключей</h2>
+{% if keys %}
 <table>
     <tr>
         <th>Id</th>
@@ -35,48 +57,97 @@
         <th>Логин пользователя</th>
         <th>Удалить ключ</th>
     </tr>
+    {% for key in keys %}
     <tr>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
+        <td>
+            {{ key.id }}
+        </td>
+        <td>
+            {{ key.keyname }}
+        </td>
+        <td>
+            {{ key.username }}
+        </td>
+        <td>
+            <form action="{{ url_for('admin_delete_key') }}" method="POST">
+                <input type="hidden" name="key_id" value="{{ key.id }}">
+                <button type="submit" onclick="return confirm('Удалить ключ?')">Удалить</button>
+            </form>
+        </td>
     </tr>
+    {% endfor %}
 </table>
+{% else %}
+<p>Ключей в системе не обнаружено</p>
+{% endif %}
 <h2>Лог действий пользователей</h2>
 <table>
     <tr>
         <th>Id</th>
         <th>Логин</th>
+        <th>Дата</th>
         <th>Действие пользователя</th>
     </tr>
     <tr>
         <td>Плейсхолдер</td>
         <td>Плейсхолдер</td>
         <td>Плейсхолдер</td>
+        <td>Плейсхолдер</td>
     </tr>
 </table>
 <h2>Активные запросы пользователей</h2>
+{% if reqs %}
 <table>
     <tr>
         <th>Id</th>
         <th>Логин</th>
         <th>Количество ключей</th>
         <th>Описание</th>
-        <th>Принять запрос</th>
-        <th>Сообщение пользователю</th>
+        <th>Ответить на запрос</th>
     </tr>
+    {% for req in reqs %}
     <tr>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
+        <td>
+            {{ req.id }}
+        </td>
+        <td>
+            {{ req.username }}
+        </td>
+        <td>
+            {{ req.quantity }}
+        </td>
+        <td>
+            {{ req.description }}
+        </td>
+        <td>
+            <form action="{{ url_for('admin_answer_request') }}" method="POST">
+                <input type="hidden" name="req_id" value="{{ req.id }}">
+
+                <p>
+                <input type="radio" id="positive" name="answer_request" value="positive" checked>
+                <label for="positive">Принять</label>
+
+                <input type="radio" id="negative" name="answer_request" value="negative" >
+                <label for="negative">Отклонить</label>
+                </p>
+
+                <p>
+                <label for="answer_message">Сообщение пользователю: </label>
+                <input type="text" id="answer_message" name="answer_message">
+                </p>
+
+                <button type="submit">Ответить</button>
+            </form>
+        </td>
     </tr>
+    {% endfor %}
 </table>
+{% else %}
+<p>Активных запросов не обнаружено</p>
+{% endif %}
 
 <h2>Создать нового администратора</h2>
-<form action="{{ url_for('admin_dashboard') }}"   method="POST">
+<form action="{{ url_for('create_new_admin') }}"   method="POST">
     <p>
         <label for="username"> Логин: </label>
         <input type="text" id="username" name="username" required>
