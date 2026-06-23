@@ -2,3 +2,5 @@ backend/.venv
 backend/__pycache__
 backend/config.py
 backend/migrations
+envy.conf
+installation.log
