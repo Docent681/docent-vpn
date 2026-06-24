@@ -43,3 +43,5 @@ class Config:
     MAIL_PASSWORD = email_password
     MAIL_DEFAULT_SENDER = ('Docent VPN', email)
     IS_MAIL_COOKED = bool(_env.get('is_mail_cooked', '1'))
+    API_URL = _env.get('api_url', None)
+    API_TOKEN = _env.get('api_token', None)

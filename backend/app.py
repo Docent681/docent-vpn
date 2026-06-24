@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, url_for, request, session
 from flask_mailman import EmailMessage
-from services import code_generate
+from services import code_generate, create_key, delete_user_key
 from config import Config
 from extensions import db, migrate, mail
 
@@ -213,6 +213,18 @@ def admin_delete_user():
 @app.route('/admin_delete_key', methods=['POST'])
 def admin_delete_key():
     error = None
+
+    key_id = request.form.get('key_id')
+    if Key.query.filter(Key.id == key_id).first() is not None:
+        key = Key.query.filter(Key.id == key_id).first()
+        if delete_user_key(key_id) == 0:
+            db.session.delete(key)
+            db.session.commit()
+        else:
+            error = "Не удалось удалить ключ"
+    else:
+        error = "Не удалось найти заданный ключ"
+
     return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/admin_answer_request', methods=['POST'])

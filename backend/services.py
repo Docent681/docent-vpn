@@ -1,7 +1,65 @@
-import random
+from random import randint
+import requests
+from flask import current_app
+from config import Config
 
+# Функция, использующаяся при двухэтапной аутентификации для формирования кода
 def code_generate():
     res = ""
     for i in range(0, 6):
-       res += str(random.randint(0, 9))
+       res += str(randint(0, 9))
     return res
+
+#функция-обертка для создания нового ключа по id в outline
+def create_key(id, name=None, method=None, password=None, port=None, limit_bytes=None ):
+    error = 0
+    url_base = f"{Config.API_URL}"
+    token = f"{Config.API_TOKEN}"
+    url = f"{url_base}/{token}/access-keys/{str(id)}"
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+
+    payload = {}
+    if name:
+        payload['name'] = name
+    if method:
+        payload['method'] = method
+    if password:
+        payload['password'] = password
+    if port:
+        payload['port'] = port
+    if limit_bytes is not None:
+        payload['limit'] = {'bytes': limit_bytes}
+
+    try:
+        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+
+    except requests.RequestException as e:
+        error = 1
+
+    return error
+
+#функция-обертка для удаления ключа по id
+def delete_user_key(id):
+    error = 0
+    url_base = f"{Config.API_URL}"
+    token = f"{Config.API_TOKEN}"
+    url = f"{url_base}/{token}/access-keys/{str(id)}"
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(url, timeout=10, headers=headers)
+        resp.raise_for_status()
+
+    except requests.RequestException as e:
+        error = 1
+
+    return error
