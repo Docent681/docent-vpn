@@ -40,22 +40,26 @@ def register():
             user.set_email(email)
             user.set_password(password)
             user.set_is_admin(False)
-            user.set_is_confirmed(False)
+            user.set_is_confirmed(True)
+            #user.set_is_confirmed(False)
             db.session.add(user)
             db.session.commit()
 
-            session['user_id'] = user.get_id()
+            if Config.IS_MAIL_COOKED:
+                return redirect(url_for('login'))
+            else:
+                session['user_id'] = user.get_id()
 
-            code = code_generate()
-            session['code'] = code
-            msg = EmailMessage(
-                "Код регистрации нового пользователя Docent VPN",
-                f"Используйте ваш персональный код {code} для регистрации в клиенте Docent VPN",
-                Config.MAIL_USERNAME,
-                [f"{email}"]
-            )
-            msg.send()
-            return redirect(url_for('verify'))
+                code = code_generate()
+                session['code'] = code
+                msg = EmailMessage(
+                    "Код регистрации нового пользователя Docent VPN",
+                    f"Используйте ваш персональный код {code} для регистрации в клиенте Docent VPN",
+                    Config.MAIL_USERNAME,
+                    [f"{email}"]
+                )
+                msg.send()
+                return redirect(url_for('verify'))
 
     return render_template('register.html', error=error)
 
