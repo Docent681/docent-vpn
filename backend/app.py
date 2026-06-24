@@ -143,7 +143,7 @@ def user_dashboard():
     request_pending = Request.query.filter(Request.username == current_user).first()
 
     session['current_user_login'] = current_user
-    return render_template('user_dashboard.html', keys=keys, answer=answer)
+    return render_template('user_dashboard.html', keys=keys, answer=answer, request_pending=request_pending)
 
 @app.route('/delete_key', methods=['POST'])
 def delete_key():

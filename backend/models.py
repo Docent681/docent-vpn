@@ -58,6 +58,9 @@ class Request(db.Model):
     def set_id(self, id):
         self.id = id
 
+    def set_status(self, status):
+        self.status = status
+
     def set_keygroup_name(self, keygroup_name):
         self.keygroup_name = keygroup_name
 
@@ -75,7 +78,7 @@ class Request(db.Model):
 
 
 class RequestAnswer(db.Model):
-    __tablename__ = 'requestAnswers'
+    __tablename__ = 'requestanswers'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
