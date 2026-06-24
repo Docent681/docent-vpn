@@ -94,17 +94,42 @@ echo "Передаем конфиг nginx.conf в /etc/nginx..."
 if [[ -f $PROJECT_DIR/nginx.conf  ]]; then
     if [[ -d /etc/nginx ]]; then
         cp -f -T "$PROJECT_DIR/nginx.conf" /etc/nginx/nginx.conf
-
-        if systemctl is-active --quiet nginx; then
-            systemctl reload nginx || systemctl restart nginx
-        fi
-        echo "nginx был настроен и перезагружен"
+        echo "успешно передали nginx.conf в /etc/nginx"
     else
         echo "nginx не установлен. Пропускаем конфигурацию"
     fi
 else
     echo "Не найден файл конфигурации nginx.conf. Настройте nginx вручную"
 fi
+
+echo "передаем конфиг docent-vpn в nginx..."
+if [[ -f "$PROJECT_DIR/docent-vpn_nginx.txt" ]]; then
+    if [[ -d /etc/nginx ]]; then
+        if [[ -f /etc/nginx/sites-enabled/default ]]; then
+           rm /etc/nginx/sites-enabled/default
+           echo "Удалили страницу nginx по умолчанию"
+        fi
+
+        cp "$PROJECT_DIR/docent-vpn_nginx.txt" /etc/nginx/sites-available/docent-vpn
+        ln -s /etc/nginx/sites-available/docent-vpn /etc/nginx/sites-enabled/
+
+        if nginx -t &>> "$LOGFILE"; then
+            echo "Успешно перенесли конфиг docent-vpn в nginx"
+        else
+            echo "В ходе передачи конфига docent-vpn в nginx. Подробности в $LOGFILE "
+        fi
+    else
+        echo "nginx не установлен. Пропускаем конфигурацию"
+    fi
+else
+    echo "Не найден файл конфигурации docent-vpn_nginx.txt. Пропускаем конфигурацию"
+fi
+
+#Перезагрузка nginx
+if systemctl is-active --quiet nginx; then
+systemctl reload nginx || systemctl restart nginx
+fi
+
 
 
 #Установка базы данных PostgreSQL
@@ -295,6 +320,32 @@ if [[ $? -ne 0 ]]; then
 fi
 
 echo "Конфигурация Python-окружения завершена."
+
+#Создание службы в systemd
+echo "Организуем автозапуск сервера через systemd..."
+if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
+    awk -v user="$SUDO_USER" \
+    -v group="$SUDO_USER" \
+    -v wd="$PROJECT_DIR/backend" \
+    -v env_path="$PROJECT_DIR/backend/.venv/bin" \
+    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app" '
+    /^User=/             { printf "User=%s\n", user; next }
+    /^Group=/            { printf "Group=%s\n", group; next }
+    /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
+    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
+    /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
+    { print }
+' "$PROJECT_DIR/docent-vpn.service" > "$PROJECT_DIR/docent-vpn.service.tmp" && mv "$PROJECT_DIR/docent-vpn.service.tmp" "$PROJECT_DIR/docent-vpn.service"
+    cp "$PROJECT_DIR/docent-vpn.service" /etc/systemd/system/docent-vpn.service
+
+    systemctl daemon-reload
+    systemctl enable --now docent-vpn
+
+    echo "автозапуск сервера был успешно настроен"
+else
+    echo "В проекте не найден файл docent-vpn.service. Пропускаем конфигурацию автозапуска"
+fi
+
 
 #Вывод итоговой информации
 echo "=============================="
