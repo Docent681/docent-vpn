@@ -185,16 +185,20 @@ def request_key():
     description = request.form.get("description")
 
     if Request.query.filter(Request.username == current_user).first() is None:
-        req = Request()
-        req.set_username(current_user)
-        req.set_quantity(key_amount)
-        req.set_keygroup_name(keygroup_name)
-        req.set_description(str(description))
-        req.set_status('pending')
-        db.session.add(req)
-        db.session.commit()
+        pass
     else:
-        error = "Вы уже отправляли запрос администраторам. Необходимо дождаться, пока они не ответят"
+        old_req = Request.query.filter(Request.username == current_user).first()
+        db.session.delete(old_req)
+        db.session.commit()
+    req = Request()
+    req.set_username(current_user)
+    req.set_quantity(key_amount)
+    req.set_keygroup_name(keygroup_name)
+    req.set_description(str(description))
+    req.set_status('pending')
+    db.session.add(req)
+    db.session.commit()
+
     return redirect(url_for('user_dashboard', error=error))
 
 #Основная страница администратора
