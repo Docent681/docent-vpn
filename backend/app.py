@@ -97,6 +97,10 @@ def verify():
 
     return render_template('verify.html', error=error)
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 #Страница для входа пользователя/администратора
 @app.route('/login', methods=['GET', 'POST'])
