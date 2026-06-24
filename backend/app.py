@@ -266,13 +266,14 @@ def admin_answer_request():
             db.session.commit()
 
         answer.set_username(username)
+
         if answer_message is None:
             answer.set_answer("")
         else:
             answer.set_answer(answer_message)
 
         if answer_request == "positive":
-            for i in range(req.quantity):
+            for i in range(int(req.quantity)):
                 keyname = f"{req.keygroup_name}{i}"
                 resp = create_key(name=keyname)
                 if resp != 1:

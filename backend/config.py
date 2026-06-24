@@ -44,4 +44,4 @@ class Config:
     MAIL_DEFAULT_SENDER = ('Docent VPN', email)
     IS_MAIL_COOKED = bool(_env.get('is_mail_cooked', '1'))
     API_URL = _env.get('api_url', None)
-    OUTLINE_SECRET_PATH = _env.get('outline_secret_token', None)
+    OUTLINE_SECRET_PATH = _env.get('outline_secret_path', None)

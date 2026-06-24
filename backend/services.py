@@ -35,7 +35,7 @@ def create_key(name=None, method=None, password=None, port=None, limit_bytes=Non
         payload['limit'] = {'bytes': limit_bytes}
 
     try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        resp = requests.post(url, json=payload, headers=headers, timeout=10, verify=False)
         resp.raise_for_status()
         res = resp.json()
         return res
@@ -57,7 +57,7 @@ def delete_user_key(id):
     }
 
     try:
-        resp = requests.get(url, timeout=10, headers=headers)
+        resp = requests.get(url, timeout=10, headers=headers, verify=False)
         resp.raise_for_status()
 
     except requests.RequestException as e:
