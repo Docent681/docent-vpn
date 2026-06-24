@@ -139,35 +139,64 @@
 
     <!-- FEEDBACK SECTION -->
     <div class="feedback-section">
-        <h2 class="section-title">📬 Обратная связь от администратора</h2>
+        <h2 class="section-title">📬 Статус запроса</h2>
         
         {% if answer %}
+        <!-- Если админ уже ответил -->
         <div class="table-wrapper">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Вердикт</th>
+                        <th>Статус</th>
                         <th>Ответ администратора</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>
-                            {% if verdict %}
+                            {% if answer.get_verdict() %}
                             <span class="badge-status confirmed">✅ Одобрено</span>
                             {% else %}
                             <span class="badge-status unconfirmed">❌ Отклонено</span>
                             {% endif %}
                         </td>
-                        <td style="color: rgba(255,255,255,0.8);">{{ answer.answer }}</td>
+                        <td style="color: rgba(255,255,255,0.8);">{{ answer.get_answer() }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        
+        {% elif request_pending %}
+        <!-- Если запрос ещё не обработан -->
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Описание запроса</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="badge-status" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">
+                                ⏳ На рассмотрении
+                            </span>
+                        </td>
+                        <td style="color: rgba(255,255,255,0.7);">{{ request_pending.description }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
         {% else %}
+        <!-- Если нет ни запроса, ни ответа -->
         <div class="empty-state" style="padding: 20px;">
             <span class="empty-icon">💬</span>
-            Здесь вы увидите ответ на ваш запрос от администратора
+            У вас нет активных запросов.<br>
+            <span style="font-size: 13px; color: rgba(255,255,255,0.3);">
+                Отправьте запрос на ключи через форму выше
+            </span>
         </div>
         {% endif %}
     </div>

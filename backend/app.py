@@ -140,6 +140,7 @@ def user_dashboard():
         return redirect(url_for('login', error=error))
     keys = Key.query.filter(Key.username == current_user).all()
     answer = RequestAnswer.query.filter(RequestAnswer.username == current_user).first()
+    request_pending = Request.query.filter(Request.username == current_user).first()
 
     session['current_user_login'] = current_user
     return render_template('user_dashboard.html', keys=keys, answer=answer)
@@ -189,7 +190,7 @@ def request_key():
         req.set_quantity(key_amount)
         req.set_keygroup_name(keygroup_name)
         req.set_description(str(description))
-
+        req.set_status('pending')
         db.session.add(req)
         db.session.commit()
     else:

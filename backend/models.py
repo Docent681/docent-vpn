@@ -45,7 +45,7 @@ class Request(db.Model):
     quantity = db.Column(db.Integer, unique=False, nullable=False)
     keygroup_name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.String(1024), unique=False, nullable=False)
-
+    status = db.Column(db.String(20), default='pending')
     def set_quantity(self, quantity):
         self.quantity = quantity
 
