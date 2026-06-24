@@ -136,10 +136,10 @@ def user_dashboard():
         error = "Необходимо войти в систему"
         return redirect(url_for('login', error=error))
     keys = Key.query.filter(Key.username == current_user).all()
-
+    answer = RequestAnswer.query.filter(RequestAnswer.username == current_user).first()
 
     session['current_user_login'] = current_user
-    return render_template('user_dashboard.html', keys=keys)
+    return render_template('user_dashboard.html', keys=keys, answer=answer)
 
 @app.route('/delete_key', methods=['POST'])
 def delete_key():
