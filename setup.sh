@@ -324,14 +324,22 @@ echo "Конфигурация Python-окружения завершена."
 #Создание службы в systemd
 echo "Организуем автозапуск сервера через systemd..."
 if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
-    sed -i "s/^User=.*/User=$SUDO_USER/" "$PROJECT_DIR/docent-vpn.service"
-    sed -i "s/^Group=.*/Group=$SUDO_USER/" "$PROJECT_DIR/docent-vpn.service"
-    sed -i "s/^WorkingDirectory=.*/WorkingDirectory=$PROJECT_DIR/backend/" "$PROJECT_DIR/docent-vpn.service"
-    sed -i "s/^Environment=.*/Environment="PATH="$PROJECT_DIR/backend/.venv/bin" "$PROJECT_DIR/docent-vpn.service"
-    sed -i "s/^ExecStart=.*/ExecStart=$PROJECT_DIR/backend/.venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app" "$PROJECT_DIR/docent-vpn.service"
+    awk -v user="$SUDO_USER" \
+    -v group="$SUDO_USER" \
+    -v wd="$PROJECT_DIR/backend" \
+    -v env_path="$PROJECT_DIR/backend/.venv/bin" \
+    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app" '
+    /^User=/             { printf "User=%s\n", user; next }
+    /^Group=/            { printf "Group=%s\n", group; next }
+    /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
+    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
+    /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
+    { print }
+' "$PROJECT_DIR/docent-vpn.service" > "$PROJECT_DIR/docent-vpn.service.tmp" && mv "$PROJECT_DIR/docent-vpn.service.tmp" "$PROJECT_DIR/docent-vpn.service"
+    cp "$PROJECT_DIR/docent-vpn.service" /etc/systemd/system/docent-vpn.service
 
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now docent-vpn
+    systemctl daemon-reload
+    systemctl enable --now docent-vpn
 
     echo "автозапуск сервера был успешно настроен"
 else
