@@ -1,80 +1,385 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<style>
+    .dashboard-container {
+        max-width: 900px;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-<h1>Личный кабинет </h1>
-<hr>
-<h2>Доступные ключи</h2>
-<h2>Доступные ключи</h2>
-{% if keys %}
-<table>
-    <tr>
-        <th>Имя ключа</th>
-        <th>Ключ</th>
-        <th>Действие</th>
-    </tr>
-    {% for key in keys %}
-    <tr>
-        <td>{{ key.keyidentity }}</td>
-        <td>{{ key.get_keyname() }}</td>
-        <td>
-            <form action="{{ url_for('delete_key') }}" method="POST">
-                <input type="hidden" name="key_id" value="{{ key.id }}">
-                <button type="submit" onclick="return confirm('Удалить ключ?')">Отозвать</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>У вас пока нет ключей.</p>
-{% endif %}<br>
+<div class="dashboard-container" id="dashboardContainer">
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Отправка запроса...</div>
+    </div>
 
-<h2>Запросить ключи</h2>
-<form action="{{ url_for('request_key') }}" method="POST">
-    <p>
-        <label for="key_amount">Количество ключей: </label>
-        <input type="number" id="key_amount" name="key_amount" required>
-    </p>
+    <!-- HEADER -->
+    <div class="dashboard-header">
+        <h1 class="brand-title">🔒 Docent-VPN</h1>
+        <div class="user-info">
+            <span class="avatar">👤</span>
+            <span class="username">{{ session.get('current_user_login', 'Пользователь') }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">🚪 Выйти</a>
+        </div>
+    </div>
 
-    <p>
-        <label for="keygroup_name">Имя группы ключей: </label>
-        <input type="text" id="keygroup_name" name="keygroup_name" required>
-    </p>
-
-    <p>
-        <label for="description">Краткое описание запроса: </label>
-        <input type="text" id="descriprion" name="description" required>
-    </p>
-
-    <p>
-        <button type="submit">Запросить</button>
-    </p>
-</form>
-<h2>Обратная связь от администратора</h2>
-<p>
-    {% if answer %}
-    <tr>
-        <th>Вердикт</th>
-        <th>Ответ администратора</th>
-    </tr>
-    <tr>
-        <td>
-            {% if verdict %}
-            <p>Одобрено</p>
+    <!-- CLIPPY SECTION -->
+    <div class="clippy-section" id="clippySection">
+        <div class="clippy-wrapper">
+            <img src="{{ url_for('static', filename='clippy/hello.gif') }}" 
+                 alt="Clippy" 
+                 class="clippy-gif small" 
+                 id="clippyGif"
+                 onerror="this.classList.add('fallback'); document.getElementById('clippyFallback').classList.add('show');">
+            <div class="clippy-fallback small" id="clippyFallback">📎</div>
+        </div>
+        <div class="clippy-speech" id="clippySpeech">
+            {% if keys %}
+                <strong>👋 Привет!</strong> Смотри, у тебя есть <strong>{{ keys|length }}</strong> активных ключей!
             {% else %}
-            <p>Отклонено</p>
+                <strong>👋 Привет!</strong> У тебя пока нет ключей. Запроси их у администратора!
             {% endif %}
-        </td>
-        <td>
-            <p>{{ answer.answer }}</p>
-        </td>
-    </tr>
-    {% else %}
-    <p>Здесь вы увидите ответ на ваш запрос от администратора</p>
+        </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="message error" id="errorMessage">
+        <span class="msg-icon">⚠️</span>
+        <span id="errorText">Ошибка</span>
+    </div>
+    <div class="message success" id="successMessage">
+        <span class="msg-icon">✅</span>
+        <span id="successText">Успешно</span>
+    </div>
+
+    <!-- KEYS SECTION -->
+    <div class="keys-section">
+        <h2 class="section-title">
+            🔑 Мои ключи
+            <span class="badge">{{ keys|length if keys else 0 }}</span>
+        </h2>
+        
+        <div class="table-wrapper">
+            {% if keys %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Имя ключа</th>
+                        <th>Ключ</th>
+                        <th style="text-align: right;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in keys %}
+                    <tr>
+                        <td><strong style="color: #a78bfa;">{{ key.keyidentity }}</strong></td>
+                        <td><span class="key-name">{{ key.get_keyname() }}</span></td>
+                        <td style="text-align: right;">
+                            <form action="{{ url_for('delete_key') }}" method="POST" class="delete-key-form">
+                                <input type="hidden" name="key_id" value="{{ key.id }}">
+                                <button type="submit" class="btn-danger" onclick="return confirm('Удалить ключ? Это действие нельзя отменить.')">
+                                    🗑️ Отозвать
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">🔑</span>
+                У вас пока нет ключей.<br>
+                <span style="font-size: 13px; color: rgba(255,255,255,0.3);">
+                    Запросите ключи через форму ниже
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- REQUEST SECTION -->
+    <div class="request-section">
+        <h2 class="section-title">📨 Запросить ключи</h2>
+
+        <form action="{{ url_for('request_key') }}" method="POST" id="requestForm" class="request-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="key_amount">Количество ключей</label>
+                    <input type="number" id="key_amount" name="key_amount" placeholder="Сколько ключей нужно?" required min="1" max="10">
+                    <div class="hint">Максимум 10 ключей за один запрос</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="keygroup_name">Имя группы ключей</label>
+                    <input type="text" id="keygroup_name" name="keygroup_name" placeholder="Например: Рабочие" required minlength="3" maxlength="50">
+                    <div class="hint">От 3 до 50 символов</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Краткое описание запроса</label>
+                <textarea id="description" name="description" placeholder="Для чего нужны ключи?" required minlength="5" maxlength="500" rows="3"></textarea>
+                <div class="hint">От 5 до 500 символов</div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" id="requestBtn">🚀 Отправить запрос</button>
+                <button type="reset" class="btn-secondary">✖️ Очистить</button>
+            </div>
+        </form>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- FEEDBACK SECTION -->
+    <div class="feedback-section">
+        <h2 class="section-title">📬 Обратная связь от администратора</h2>
+        
+        {% if answer %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Вердикт</th>
+                        <th>Ответ администратора</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            {% if verdict %}
+                            <span class="badge-status confirmed">✅ Одобрено</span>
+                            {% else %}
+                            <span class="badge-status unconfirmed">❌ Отклонено</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: rgba(255,255,255,0.8);">{{ answer.answer }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 20px;">
+            <span class="empty-icon">💬</span>
+            Здесь вы увидите ответ на ваш запрос от администратора
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clippy = document.getElementById('clippyGif');
+    const clippySpeech = document.getElementById('clippySpeech');
+    const requestForm = document.getElementById('requestForm');
+    const keyAmount = document.getElementById('key_amount');
+    const keygroupName = document.getElementById('keygroup_name');
+    const description = document.getElementById('description');
+    const requestBtn = document.getElementById('requestBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const errorMsg = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successMsg = document.getElementById('successMessage');
+    const successText = document.getElementById('successText');
+
+    function setClippyGif(gifKey, isPointing = false, isSuccess = false, isError = false) {
+        setClippy(clippy, gifKey, { isPointing, isSuccess, isError });
+    }
+
+    function updateSpeech(text, animate = false) {
+        updateClippySpeech(clippySpeech, text, animate);
+    }
+
+    {% if keys %}
+    setTimeout(() => {
+        setClippyGif('pointing', true);
+        updateSpeech(`
+            <strong>📌 Смотри!</strong> Вот твои ключи! 
+            Их <strong>{{ keys|length }}</strong> штук. 
+            Можешь отозвать любой, если он больше не нужен.
+        `, true);
+    }, 800);
     {% endif %}
-</p>
+
+    function showError(message) {
+        errorText.textContent = message || 'Произошла ошибка. Попробуйте снова.';
+        errorMsg.classList.add('show');
+        setClippyGif('error', false, false, true);
+        loadingOverlay.classList.remove('show');
+        requestBtn.disabled = false;
+        setTimeout(() => {
+            errorMsg.classList.remove('show');
+            {% if keys %}
+            setClippyGif('pointing', true);
+            {% else %}
+            setClippyGif('hello');
+            {% endif %}
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        successText.textContent = message || 'Запрос отправлен! Ожидайте ответа администратора.';
+        successMsg.classList.add('show');
+        setClippyGif('success', false, true);
+        loadingOverlay.classList.remove('show');
+        requestBtn.disabled = false;
+        requestForm.reset();
+        setTimeout(() => {
+            successMsg.classList.remove('show');
+            {% if keys %}
+            setClippyGif('pointing', true);
+            {% else %}
+            setClippyGif('hello');
+            {% endif %}
+        }, 6000);
+    }
+
+    function validateForm() {
+        const errors = [];
+        
+        const amount = parseInt(keyAmount.value);
+        if (!amount || amount < 1) {
+            errors.push('Укажите количество ключей (минимум 1)');
+            keyAmount.classList.add('error');
+        } else if (amount > 10) {
+            errors.push('Максимум 10 ключей за запрос');
+            keyAmount.classList.add('error');
+        } else {
+            keyAmount.classList.remove('error');
+        }
+        
+        if (keygroupName.value.length < 3) {
+            errors.push('Имя группы должно быть минимум 3 символа');
+            keygroupName.classList.add('error');
+        } else if (keygroupName.value.length > 50) {
+            errors.push('Имя группы не должно превышать 50 символов');
+            keygroupName.classList.add('error');
+        } else {
+            keygroupName.classList.remove('error');
+        }
+        
+        if (description.value.length < 5) {
+            errors.push('Описание должно быть минимум 5 символов');
+            description.classList.add('error');
+        } else if (description.value.length > 500) {
+            errors.push('Описание не должно превышать 500 символов');
+            description.classList.add('error');
+        } else {
+            description.classList.remove('error');
+        }
+        
+        return errors;
+    }
+
+    keyAmount.addEventListener('input', function() {
+        const val = parseInt(this.value);
+        if (val && val >= 1 && val <= 10) {
+            this.classList.remove('error');
+        } else if (val > 10) {
+            this.classList.add('error');
+        }
+        errorMsg.classList.remove('show');
+        successMsg.classList.remove('show');
+    });
+
+    keygroupName.addEventListener('input', function() {
+        if (this.value.length >= 3 && this.value.length <= 50) {
+            this.classList.remove('error');
+        } else {
+            this.classList.add('error');
+        }
+        errorMsg.classList.remove('show');
+        successMsg.classList.remove('show');
+    });
+
+    description.addEventListener('input', function() {
+        if (this.value.length >= 5 && this.value.length <= 500) {
+            this.classList.remove('error');
+        } else {
+            this.classList.add('error');
+        }
+        errorMsg.classList.remove('show');
+        successMsg.classList.remove('show');
+    });
+
+    keyAmount.addEventListener('focus', function() {
+        setClippyGif('typing');
+        updateSpeech('<strong>✏️ Ого!</strong> Сколько ключей тебе нужно?');
+    });
+
+    keygroupName.addEventListener('focus', function() {
+        setClippyGif('typing');
+        updateSpeech('<strong>✏️ Придумай</strong> имя для группы ключей, чтобы было удобно их отличать.');
+    });
+
+    description.addEventListener('focus', function() {
+        setClippyGif('typing');
+        updateSpeech('<strong>✏️ Напиши</strong> подробнее, для чего нужны ключи. Это поможет админу быстрее ответить!');
+    });
+
+    [keyAmount, keygroupName, description].forEach(field => {
+        field.addEventListener('blur', function() {
+            if (!keyAmount.value && !keygroupName.value && !description.value) {
+                {% if keys %}
+                setClippyGif('pointing', true);
+                updateSpeech(`
+                    <strong>📌 Смотри!</strong> Вот твои ключи! 
+                    Их <strong>{{ keys|length }}</strong> штук.
+                `, true);
+                {% else %}
+                setClippyGif('hello');
+                updateSpeech('<strong>👋 Привет!</strong> У тебя пока нет ключей. Запроси их у администратора!');
+                {% endif %}
+            }
+        });
+    });
+
+    requestForm.addEventListener('submit', function(e) {
+        const errors = validateForm();
+        if (errors.length > 0) {
+            e.preventDefault();
+            showError(errors.join('. '));
+            return;
+        }
+        loadingOverlay.classList.add('show');
+        requestBtn.disabled = true;
+        setClippyGif('typing');
+        updateSpeech('<strong>✉️ Отправляю</strong> твой запрос администратору... Подожди немного!');
+    });
+
+    document.querySelectorAll('.delete-key-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            setClippyGif('typing');
+            updateSpeech('<strong>😮 Отзываешь</strong> ключ? Уверен?');
+            errorMsg.classList.remove('show');
+            successMsg.classList.remove('show');
+        });
+    });
+
+    if (getUrlParam('error') === '1') {
+        setTimeout(() => showError('Ошибка при обработке запроса. Попробуйте снова.'), 500);
+    }
+    
+    if (getUrlParam('success') === '1') {
+        setTimeout(() => showSuccess('Запрос на ключи успешно отправлен!'), 500);
+    }
+
+    if (getUrlParam('deleted') === '1') {
+        setTimeout(() => showSuccess('Ключ успешно отозван!'), 500);
+    }
+
+    setTimeout(() => {
+        if (!{{ keys|length }}) setClippyGif('hello');
+    }, 100);
+
+    window.showDashboardError = showError;
+    window.showDashboardSuccess = showSuccess;
+});
+</script>
 {% endblock %}

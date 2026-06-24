@@ -106,7 +106,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user_type = request.form.get('user_type')
-
+          
         user = User.query.filter((User.username == username) | (User.email == username)).first()
         if user is None:
             error = "Неверный логин или пароль"
@@ -116,7 +116,6 @@ def login():
             error = "Пожалуйста, подтвердите регистрацию по коду из письма"
         elif user_type == 'admin_choice' and not user.is_admin:
             error = "У вас нет прав администратора"
-
         else:
             session.clear()
             session['current_user_login'] = username

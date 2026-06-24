@@ -1,36 +1,252 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<style>
+    .register-container {
+        max-width: 500px;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-<h1>Docent-vpn - веб-интерфейс для управления своим VPN-сервером</h1>
-<hr>
-<h2>Регистрация нового пользователя в системе</h2>
-<form action="{{ url_for('register') }}"   method="POST">
-    <p>
-        <label for="username"> Логин: </label>
-        <input type="text" id="username" name="username" required>
-    </p>
+<div class="auth-container">
+    <div class="card register-container" id="registerContainer">
+        <!-- LOADING OVERLAY -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Регистрация...</div>
+        </div>
 
-    <p>
-        <label for="email"> Почта: </label>
-        <input type="email" id="email" name="email" required>
-    </p>
+        <!-- CLIPPY -->
+        <div class="clippy-wrapper">
+            <img src="{{ url_for('static', filename='clippy/hello.gif') }}" 
+                 alt="Clippy" 
+                 class="clippy-gif" 
+                 id="clippyGif"
+                 onerror="this.classList.add('fallback'); document.getElementById('clippyFallback').classList.add('show');">
+            <div class="clippy-fallback" id="clippyFallback">📎</div>
+        </div>
 
-    <p>
-        <label for="password"> Пароль: </label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-    </p>
+        <!-- BRAND -->
+        <h1 class="brand-title">🔒 Docent-VPN</h1>
+        <p class="brand-subtitle"><span>✦</span> Создай свой аккаунт <span>✦</span></p>
 
-    <p>
-        <label for="password_repeat"> Повторите пароль: </label>
-        <input type="password" id="password_repeat" name="password_repeat" required autocomplete="current-password">
-    </p>
+        <!-- MESSAGES -->
+        <div class="message error" id="errorMessage">
+            <span class="msg-icon">⚠️</span>
+            <span id="errorText">Ошибка регистрации</span>
+        </div>
+        <div class="message success" id="successMessage">
+            <span class="msg-icon">✅</span>
+            <span id="successText">Регистрация успешна!</span>
+        </div>
 
-    <p>
-        <button type="submit"> Зарегестрироваться </button>
-    </p>
-</form>
+        <!-- FORM -->
+        <form action="{{ url_for('register') }}" method="POST" id="registerForm" novalidate>
+            <div class="form-group">
+                <label for="username">👤 Логин</label>
+                <input type="text" id="username" name="username" placeholder="Придумайте логин" required autofocus minlength="3" maxlength="30">
+                <div class="hint">От 3 до 30 символов</div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">📧 Почта</label>
+                <input type="email" id="email" name="email" placeholder="example@mail.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">🔑 Пароль</label>
+                <input type="password" id="password" name="password" placeholder="Придумайте надёжный пароль" required minlength="8" autocomplete="new-password">
+                
+                <div class="password-strength" id="strengthIndicator">
+                    <div class="strength-bar">
+                        <div class="fill" id="strengthFill"></div>
+                    </div>
+                    <span class="strength-text" id="strengthText">Сложность</span>
+                </div>
+                
+                <div class="hint">Минимум 8 символов</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password_repeat">🔁 Повторите пароль</label>
+                <input type="password" id="password_repeat" name="password_repeat" placeholder="Введите пароль ещё раз" required autocomplete="new-password">
+                <div class="password-match" id="passwordMatch">
+                    <span id="matchIcon">⚪</span>
+                    <span id="matchText">Пароли должны совпадать</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="registerBtn">🚀 Зарегистрироваться</button>
+        </form>
+
+        <a href="{{ url_for('login') }}" class="btn-secondary">🔙 Вернуться ко входу</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clippy = document.getElementById('clippyGif');
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const passwordRepeat = document.getElementById('password_repeat');
+    const errorMsg = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successMsg = document.getElementById('successMessage');
+    const successText = document.getElementById('successText');
+    const registerForm = document.getElementById('registerForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const registerBtn = document.getElementById('registerBtn');
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthText = document.getElementById('strengthText');
+    const matchIcon = document.getElementById('matchIcon');
+    const matchText = document.getElementById('matchText');
+
+    function setClippyGif(gifKey, isError = false, isSuccess = false) {
+        setClippy(clippy, gifKey, { isError, isSuccess });
+    }
+
+    function hideMessages() {
+        errorMsg.classList.remove('show');
+        successMsg.classList.remove('show');
+    }
+
+    function showError(message) {
+        errorText.textContent = message || 'Ошибка регистрации. Попробуйте снова.';
+        errorMsg.classList.add('show');
+        setClippyGif('error', true);
+        loadingOverlay.classList.remove('show');
+        registerBtn.disabled = false;
+        setTimeout(() => errorMsg.classList.remove('show'), 6000);
+    }
+
+    function showSuccess(message) {
+        successText.textContent = message || 'Регистрация успешна! Перенаправление...';
+        successMsg.classList.add('show');
+        setClippyGif('success', false, true);
+        loadingOverlay.classList.remove('show');
+        registerBtn.disabled = false;
+    }
+
+    function validateForm() {
+        const errors = [];
+        
+        if (username.value.length < 3) {
+            errors.push('Логин должен быть минимум 3 символа');
+            username.classList.add('error');
+        } else {
+            username.classList.remove('error');
+            username.classList.add('success');
+        }
+        
+        if (!validateEmail(email.value)) {
+            errors.push('Введите корректный email');
+            email.classList.add('error');
+        } else {
+            email.classList.remove('error');
+            email.classList.add('success');
+        }
+        
+        const strength = checkPasswordStrength(password.value);
+        if (password.value.length < 8) {
+            errors.push('Пароль должен быть минимум 8 символов');
+            password.classList.add('error');
+        } else if (strength.score <= 2) {
+            errors.push('Пароль слишком слабый');
+            password.classList.add('error');
+        } else {
+            password.classList.remove('error');
+            password.classList.add('success');
+        }
+        
+        if (password.value !== passwordRepeat.value || passwordRepeat.value.length === 0) {
+            errors.push('Пароли не совпадают');
+            passwordRepeat.classList.add('error');
+        } else {
+            passwordRepeat.classList.remove('error');
+            passwordRepeat.classList.add('success');
+        }
+        
+        return errors;
+    }
+
+    username.addEventListener('input', function() {
+        if (this.value.length >= 3) {
+            this.classList.remove('error');
+            this.classList.add('success');
+        } else {
+            this.classList.remove('success');
+        }
+        hideMessages();
+    });
+
+    email.addEventListener('input', function() {
+        if (validateEmail(this.value)) {
+            this.classList.remove('error');
+            this.classList.add('success');
+        } else {
+            this.classList.remove('success');
+        }
+        hideMessages();
+    });
+
+    password.addEventListener('input', function() {
+        updatePasswordStrength(this, strengthFill, strengthText);
+        checkPasswordMatch(password, passwordRepeat, matchIcon, matchText);
+        hideMessages();
+        if (this.value.length > 0) setClippyGif('typing');
+    });
+
+    password.addEventListener('blur', function() {
+        if (!this.value && !username.value && !email.value && !passwordRepeat.value) {
+            setClippyGif('hello');
+        }
+    });
+
+    passwordRepeat.addEventListener('input', function() {
+        checkPasswordMatch(password, this, matchIcon, matchText);
+        hideMessages();
+    });
+
+    passwordRepeat.addEventListener('blur', function() {
+        if (!this.value && !username.value && !email.value && !password.value) {
+            setClippyGif('hello');
+        }
+    });
+
+    [username, email, password, passwordRepeat].forEach(field => {
+        field.addEventListener('focus', function() { setClippyGif('typing'); });
+    });
+
+    registerForm.addEventListener('submit', function(e) {
+        const errors = validateForm();
+        if (errors.length > 0) {
+            e.preventDefault();
+            showError(errors.join('. '));
+            return;
+        }
+        loadingOverlay.classList.add('show');
+        registerBtn.disabled = true;
+        setClippyGif('hello');
+    });
+
+    setClippyGif('hello');
+
+    if (getUrlParam('error') === '1') {
+        setTimeout(() => {
+            showError('Пользователь с таким логином или email уже существует');
+        }, 500);
+    }
+    
+    if (getUrlParam('success') === '1') {
+        setTimeout(() => {
+            showSuccess('Регистрация прошла успешно!');
+        }, 500);
+    }
+
+    window.showRegisterError = function(message) { showError(message); };
+    window.showRegisterSuccess = function(message) { showSuccess(message); };
+});
+</script>
 {% endblock %}

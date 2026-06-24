@@ -1,39 +1,149 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<style>
+    .login-container {
+        max-width: 480px;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-<h1>Docent-VPN - веб-интерфейс для управления своим Vpn-сервером</h1>
-<h2>Вход в систему</h2>
-<hr>
-<form action="{{ url_for('login') }}"   method="POST">
-    <p>
-        <label for="username"> Логин или почта: </label>
-        <input type="text" id="username" name="username" required>
-    </p>
+<div class="auth-container">
+    <div class="card login-container" id="loginContainer">
+        <!-- LOADING OVERLAY -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Вход в систему...</div>
+        </div>
 
-    <p>
-        <label for="password"> Пароль: </label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-    </p>
+        <!-- CLIPPY -->
+        <div class="clippy-wrapper">
+            <img src="{{ url_for('static', filename='clippy/hello.gif') }}" 
+                 alt="Clippy" 
+                 class="clippy-gif" 
+                 id="clippyGif"
+                 onerror="this.classList.add('fallback'); document.getElementById('clippyFallback').classList.add('show');">
+            <div class="clippy-fallback" id="clippyFallback">📎</div>
+        </div>
 
-    <p> Войти как: </p>
+        <!-- BRAND -->
+        <h1 class="brand-title">🔒 Docent-VPN</h1>
+        <p class="brand-subtitle"><span>✦</span> Управляй своим VPN-сервером <span>✦</span></p>
 
-    <input type="radio" id="user_choice" name="user_type" value="user_choice" checked>
-    <label for="user_choice">Пользователь</label>
+        <!-- ERROR MESSAGE -->
+        <div class="message error" id="errorMessage">
+            <span class="msg-icon">⚠️</span>
+            <span id="errorText">Неверный логин или пароль</span>
+        </div>
 
-    <input type="radio" id="admin_choice" name="user_type" value="admin_choice" >
-    <label for="admin_choice">Администратор</label>
+        <!-- FORM -->
+        <form action="{{ url_for('login') }}" method="POST" id="loginForm">
+            <div class="form-group">
+                <label for="username">👤 Логин или почта</label>
+                <input type="text" id="username" name="username" placeholder="Введите логин или email" required autofocus>
+            </div>
 
-    <p>
-        <button type="submit"> Войти </button>
-    </p>
-</form>
-<br>
-<h2>Регистрация нового пользователя</h2>
-<a href="{{ url_for('register') }}"
-    <button>Зарегистрироваться</button>
-</a>
+            <div class="form-group">
+                <label for="password">🔑 Пароль</label>
+                <input type="password" id="password" name="password" placeholder="Введите пароль" required autocomplete="current-password">
+            </div>
+
+            <label style="color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; margin-bottom: 8px; display: block;">
+                Войти как:
+            </label>
+
+            <div class="radio-group">
+                <label class="radio-option active" id="userLabel">
+                    <input type="radio" name="user_type" value="user_choice" checked>
+                    <span class="radio-custom"></span>
+                    <span class="radio-label">👤 Пользователь</span>
+                </label>
+                <label class="radio-option" id="adminLabel">
+                    <input type="radio" name="user_type" value="admin_choice">
+                    <span class="radio-custom"></span>
+                    <span class="radio-label">🛡️ Администратор</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary" id="loginBtn">Войти в систему</button>
+        </form>
+
+        <a href="{{ url_for('register') }}" class="btn-secondary">✨ Зарегистрироваться</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clippy = document.getElementById('clippyGif');
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const errorMsg = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const loginForm = document.getElementById('loginForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loginBtn = document.getElementById('loginBtn');
+
+    function setClippyGif(gifKey, isError = false) {
+        setClippy(clippy, gifKey, { isError });
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMsg.classList.add('show');
+        setClippyGif('error', true);
+        username.classList.add('error');
+        password.classList.add('error');
+        loadingOverlay.classList.remove('show');
+        loginBtn.disabled = false;
+        
+        setTimeout(() => {
+            errorMsg.classList.remove('show');
+            username.classList.remove('error');
+            password.classList.remove('error');
+            if (!username.value && !password.value) {
+                setClippyGif('hello');
+            }
+        }, 5000);
+    }
+
+    username.addEventListener('focus', function() { setClippyGif('typing'); });
+    username.addEventListener('blur', function() {
+        if (!this.value && !password.value) setClippyGif('hello');
+    });
+    password.addEventListener('focus', function() { setClippyGif('typing'); });
+    password.addEventListener('blur', function() {
+        if (!username.value && !this.value) setClippyGif('hello');
+    });
+
+    username.addEventListener('input', function() {
+        if (this.classList.contains('error')) {
+            this.classList.remove('error');
+            errorMsg.classList.remove('show');
+        }
+    });
+    password.addEventListener('input', function() {
+        if (this.classList.contains('error')) {
+            this.classList.remove('error');
+            errorMsg.classList.remove('show');
+        }
+    });
+
+    loginForm.addEventListener('submit', function(e) {
+        loadingOverlay.classList.add('show');
+        loginBtn.disabled = true;
+        setClippyGif('hello');
+    });
+
+    setClippyGif('hello');
+
+    if (getUrlParam('error') === '1') {
+        setTimeout(() => {
+            showError('Неверные учётные данные. Проверьте логин и пароль.');
+        }, 500);
+    }
+
+    window.showLoginError = function(message) { showError(message); };
+});
+</script>
 {% endblock %}

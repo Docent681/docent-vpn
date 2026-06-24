@@ -1,183 +1,432 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<style>
+    .admin-container {
+        max-width: 1200px;
+    }
+    .admin-form {
+        max-width: 500px;
+    }
+    .request-form-inline .radio-group {
+        display: flex;
+        gap: 12px;
+        margin: 0;
+    }
+    .request-form-inline .radio-group label {
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+    }
+    .request-form-inline .radio-group input[type="radio"] {
+        accent-color: #818cf8;
+        cursor: pointer;
+    }
+    .request-form-inline .msg-input {
+        width: 100%;
+        padding: 6px 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        outline: none;
+        font-family: inherit;
+    }
+    .request-form-inline .msg-input:focus {
+        border-color: #818cf8;
+        background: rgba(255,255,255,0.08);
+    }
+    .request-form-inline .msg-input::placeholder {
+        color: rgba(255,255,255,0.25);
+    }
+    .request-form-inline .btn-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
-<h1>Личный кабинет администратора</h1>
-<hr>
-<h2>База пользователей</h2>
-{% if users %}
-<table>
-    <tr>
-        <th>Id</th>
-        <th>Логин</th>
-        <th>Почта</th>
-        <th>Админ</th>
-        <th>Подтвержден</th>
-        <th>Действие</th>
-    </tr>
-    {% for user in users %}
-    <tr>
-        <td>
-            {{ user.id }}
-        </td>
-        <td>
-            {{ user.username }}
-        </td>
-        <td>
-            {{ user.email }}
-        </td>
-        <td>
-            {{ user.is_admin }}
-        </td>
-        <td>
-            {{ user.is_confirmed }}
-        </td>
-        <td>
-            <form action="{{ url_for('admin_delete_user') }}" method="POST">
-                <input type="hidden" name="user_id" value="{{ user.id }}">
-                <button type="submit" onclick="return confirm('Удалить пользователя?')">Удалить</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>Пользователей в системе не обнаружено</p>
-{% endif %}
-<br>
-<h2>База ключей</h2>
-{% if keys %}
-<table>
-    <tr>
-        <th>Id</th>
-        <th>Ключ</th>
-        <th>Логин пользователя</th>
-        <th>Удалить ключ</th>
-    </tr>
-    {% for key in keys %}
-    <tr>
-        <td>
-            {{ key.id }}
-        </td>
-        <td>
-            {{ key.keyname }}
-        </td>
-        <td>
-            {{ key.username }}
-        </td>
-        <td>
-            <form action="{{ url_for('admin_delete_key') }}" method="POST">
-                <input type="hidden" name="key_id" value="{{ key.id }}">
-                <button type="submit" onclick="return confirm('Удалить ключ?')">Удалить</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>Ключей в системе не обнаружено</p>
-{% endif %}
-<h2>Лог действий пользователей</h2>
-<table>
-    <tr>
-        <th>Id</th>
-        <th>Логин</th>
-        <th>Дата</th>
-        <th>Действие пользователя</th>
-    </tr>
-    <tr>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-        <td>Плейсхолдер</td>
-    </tr>
-</table>
-<h2>Активные запросы пользователей</h2>
-{% if reqs %}
-<table>
-    <tr>
-        <th>Id</th>
-        <th>Логин</th>
-        <th>Количество ключей</th>
-        <th>Название группы ключей</th>
-        <th>Содержание ответа</th>
-        <th>Ответить на запрос</th>
-    </tr>
-    {% for req in reqs %}
-    <tr>
-        <td>
-            {{ req.id }}
-        </td>
-        <td>
-            {{ req.username }}
-        </td>
-        <td>
-            {{ req.quantity }}
-        </td>
-        <td>
-            {{ req.keygroup_name }}
-        </td>
+<div class="dashboard-container admin-container" id="adminContainer">
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Выполнение операции...</div>
+    </div>
 
-        <td>
-            {{ req.description }}
-        </td>
-        <td>
-            <form action="{{ url_for('admin_answer_request') }}" method="POST">
-                <input type="hidden" name="req_id" value="{{ req.id }}">
-                <input type="hidden" name="keygroup_name" value="{{ req.keygroup_name }}">
-                <input type="hidden" name="username" value="{{ req.username }}">
+    <!-- HEADER -->
+    <div class="dashboard-header">
+        <h1 class="brand-title admin">
+            <span class="shield">🛡️</span> Docent-VPN
+        </h1>
+        <div class="user-info">
+            <span class="avatar">👤</span>
+            <span class="username">{{ session.get('current_user_login', 'Админ') }}</span>
+            <span class="admin-badge">ADMIN</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">🚪 Выйти</a>
+        </div>
+    </div>
 
-                <p>
-                <input type="radio" id="positive" name="answer_request" value="positive" checked>
-                <label for="positive">Принять</label>
+    <!-- CLIPPY SECTION -->
+    <div class="clippy-section" id="clippySection">
+        <div class="clippy-wrapper">
+            <img src="{{ url_for('static', filename='clippy/hello.gif') }}" 
+                 alt="Clippy" 
+                 class="clippy-gif small" 
+                 id="clippyGif"
+                 onerror="this.classList.add('fallback'); document.getElementById('clippyFallback').classList.add('show');">
+            <div class="clippy-fallback small" id="clippyFallback">📎</div>
+        </div>
+        <div class="clippy-speech" id="clippySpeech">
+            <strong>👋 Здравствуйте, Администратор!</strong> 
+            У вас <span class="highlight">{{ users|length if users else 0 }}</span> пользователей, 
+            <span class="highlight">{{ keys|length if keys else 0 }}</span> ключей и 
+            <span class="highlight">{{ reqs|length if reqs else 0 }}</span> активных запросов.
+        </div>
+    </div>
 
-                <input type="radio" id="negative" name="answer_request" value="negative" >
-                <label for="negative">Отклонить</label>
-                </p>
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-number">{{ users|length if users else 0 }}</div>
+            <div class="stat-label">Всего пользователей</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔑</div>
+            <div class="stat-number">{{ keys|length if keys else 0 }}</div>
+            <div class="stat-label">Активных ключей</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📨</div>
+            <div class="stat-number">{{ reqs|length if reqs else 0 }}</div>
+            <div class="stat-label">Запросов на ключи</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number">{{ users|selectattr('is_confirmed', 'equalto', True)|list|length }}</div>
+            <div class="stat-label">Подтверждённых</div>
+        </div>
+    </div>
 
-                <p>
-                <label for="answer_message">Сообщение пользователю: </label>
-                <input type="text" id="answer_message" name="answer_message">
-                </p>
+    <!-- MESSAGES -->
+    <div class="message error" id="errorMessage">
+        <span class="msg-icon">⚠️</span>
+        <span id="errorText">Ошибка</span>
+    </div>
+    <div class="message success" id="successMessage">
+        <span class="msg-icon">✅</span>
+        <span id="successText">Успешно</span>
+    </div>
 
-                <button type="submit">Ответить</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>Активных запросов не обнаружено</p>
-{% endif %}
+    <!-- USERS TABLE -->
+    <h2 class="section-title">
+        👥 База пользователей
+        <span class="badge">{{ users|length if users else 0 }}</span>
+    </h2>
+    
+    <div class="table-wrapper">
+        {% if users %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Почта</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                    <th style="text-align: right;">Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><code style="color: rgba(255,255,255,0.4);">#{{ user.id }}</code></td>
+                    <td><strong style="color: #fff;">{{ user.username }}</strong></td>
+                    <td style="color: rgba(255,255,255,0.6);">{{ user.email }}</td>
+                    <td>
+                        <span class="badge-status {{ 'admin' if user.is_admin else 'user' }}">
+                            {{ '🛡️ Админ' if user.is_admin else '👤 Пользователь' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge-status {{ 'confirmed' if user.is_confirmed else 'unconfirmed' }}">
+                            {{ '✅ Подтверждён' if user.is_confirmed else '⏳ Не подтверждён' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        {% if not user.is_admin or user.id != session.get('user_id') %}
+                        <form action="{{ url_for('admin_delete_user') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <button type="submit" class="btn-danger" onclick="return confirm('Удалить пользователя {{ user.username }}? Это действие нельзя отменить.')">
+                                🗑️ Удалить
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="color: rgba(255,255,255,0.2); font-size: 12px;">Вы</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">👤</span>
+            Пользователей в системе не обнаружено
+        </div>
+        {% endif %}
+    </div>
 
-<h2>Создать нового администратора</h2>
-<form action="{{ url_for('create_new_admin') }}"   method="POST">
-    <p>
-        <label for="username"> Логин: </label>
-        <input type="text" id="username" name="username" required>
-    </p>
+    <hr class="section-divider">
 
-    <p>
-        <label for="email"> Почта: </label>
-        <input type="email" id="email" name="email" required>
-    </p>
+    <!-- KEYS TABLE -->
+    <h2 class="section-title">
+        🔑 База ключей
+        <span class="badge">{{ keys|length if keys else 0 }}</span>
+    </h2>
+    
+    <div class="table-wrapper">
+        {% if keys %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Имя ключа</th>
+                    <th>Ключ</th>
+                    <th>Владелец</th>
+                    <th style="text-align: right;">Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in keys %}
+                <tr>
+                    <td><code style="color: rgba(255,255,255,0.4);">#{{ key.id }}</code></td>
+                    <td><strong style="color: #a78bfa;">{{ key.keyidentity }}</strong></td>
+                    <td><span class="key-name">{{ key.keyname }}</span></td>
+                    <td><strong style="color: #f472b6;">{{ key.username }}</strong></td>
+                    <td style="text-align: right;">
+                        <form action="{{ url_for('admin_delete_key') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                            <button type="submit" class="btn-danger" onclick="return confirm('Удалить ключ {{ key.keyname }}?')">
+                                🗑️ Удалить
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🔑</span>
+            Ключей в системе не обнаружено
+        </div>
+        {% endif %}
+    </div>
 
-    <p>
-        <label for="password"> Пароль: </label>
-        <input type="password" id="password" name="password">
-    </p>
+    <hr class="section-divider">
 
-    <p>
-        <label for="password_repeat"> Повторите пароль: </label>
-        <input type="password" id="password_repeat" name="password_repeat">
-    </p>
+    <!-- LOGS TABLE (Placeholder) -->
+    <h2 class="section-title">
+        📋 Лог действий пользователей
+        <span class="badge">В разработке</span>
+    </h2>
+    
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Дата</th>
+                    <th>Действие пользователя</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4" style="text-align: center; color: rgba(255,255,255,0.3); padding: 30px;">
+                        📝 Логирование действий будет добавлено в ближайшее время
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-    <p>
-        <button type="submit"> Зарегистрировать нового администратора </button>
-    </p>
-</form>
+    <hr class="section-divider">
 
+    <!-- REQUESTS TABLE -->
+    <h2 class="section-title">
+        📨 Активные запросы пользователей
+        <span class="badge">{{ reqs|length if reqs else 0 }}</span>
+    </h2>
+    
+    <div class="table-wrapper">
+        {% if reqs %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Пользователь</th>
+                    <th>Кол-во</th>
+                    <th>Группа</th>
+                    <th>Описание</th>
+                    <th style="min-width: 220px;">Ответить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in reqs %}
+                <tr>
+                    <td><code style="color: rgba(255,255,255,0.4);">#{{ req.id }}</code></td>
+                    <td><strong style="color: #f472b6;">{{ req.username }}</strong></td>
+                    <td><span class="badge-status confirmed">{{ req.quantity }}</span></td>
+                    <td><strong style="color: #a78bfa;">{{ req.keygroup_name }}</strong></td>
+                    <td style="max-width: 150px; word-break: break-word; color: rgba(255,255,255,0.7);">
+                        {{ req.description }}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('admin_answer_request') }}" method="POST" class="request-form-inline">
+                            <input type="hidden" name="req_id" value="{{ req.id }}">
+                            <input type="hidden" name="keygroup_name" value="{{ req.keygroup_name }}">
+                            <input type="hidden" name="username" value="{{ req.username }}">
+                            <input type="hidden" name="quantity" value="{{ req.quantity }}">
+                            
+                            <div class="radio-group">
+                                <label>
+                                    <input type="radio" name="answer_request" value="positive" checked>
+                                    ✅ Принять
+                                </label>
+                                <label>
+                                    <input type="radio" name="answer_request" value="negative">
+                                    ❌ Отклонить
+                                </label>
+                            </div>
+                            
+                            <input type="text" 
+                                   name="answer_message" 
+                                   class="msg-input" 
+                                   placeholder="Сообщение пользователю (опционально)">
+                            
+                            <div class="btn-group">
+                                <button type="submit" class="btn-success">✅ Ответить</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📭</span>
+            Активных запросов не обнаружено
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- CREATE ADMIN -->
+    <h2 class="section-title">👑 Создать нового администратора</h2>
+    
+    <form action="{{ url_for('create_new_admin') }}" method="POST" class="admin-form" id="createAdminForm">
+        <div class="form-group">
+            <label for="admin_username">👤 Логин</label>
+            <input type="text" id="admin_username" name="username" placeholder="Придумайте логин" required minlength="3" maxlength="30">
+        </div>
+
+        <div class="form-group">
+            <label for="admin_email">📧 Почта</label>
+            <input type="email" id="admin_email" name="email" placeholder="example@mail.com" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="admin_password">🔑 Пароль</label>
+                <input type="password" id="admin_password" name="password" placeholder="Пароль" required minlength="8">
+            </div>
+
+            <div class="form-group">
+                <label for="admin_password_repeat">🔁 Повторите</label>
+                <input type="password" id="admin_password_repeat" name="password_repeat" placeholder="Повторите пароль" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="createAdminBtn">👑 Создать администратора</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clippy = document.getElementById('clippyGif');
+    const adminForm = document.getElementById('createAdminForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const errorMsg = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successMsg = document.getElementById('successMessage');
+    const successText = document.getElementById('successText');
+
+    function setClippyGif(gifKey, isError = false, isSuccess = false) {
+        setClippy(clippy, gifKey, { isError, isSuccess });
+    }
+
+    function showError(message) {
+        errorText.textContent = message || 'Произошла ошибка. Попробуйте снова.';
+        errorMsg.classList.add('show');
+        setClippyGif('error', true);
+        loadingOverlay.classList.remove('show');
+        setTimeout(() => {
+            errorMsg.classList.remove('show');
+            setClippyGif('hello');
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        successText.textContent = message || 'Операция выполнена успешно!';
+        successMsg.classList.add('show');
+        setClippyGif('success', false, true);
+        loadingOverlay.classList.remove('show');
+        setTimeout(() => {
+            successMsg.classList.remove('show');
+            setClippyGif('hello');
+        }, 4000);
+    }
+
+    adminForm.addEventListener('submit', function(e) {
+        loadingOverlay.classList.add('show');
+        setClippyGif('typing');
+    });
+
+    if (getUrlParam('error') === '1') {
+        setTimeout(() => showError('Ошибка при выполнении операции'), 500);
+    }
+    
+    if (getUrlParam('success') === '1') {
+        setTimeout(() => showSuccess('Операция выполнена успешно!'), 500);
+    }
+
+    if (getUrlParam('deleted') === '1') {
+        setTimeout(() => showSuccess('Пользователь удалён!'), 500);
+    }
+
+    if (getUrlParam('key_deleted') === '1') {
+        setTimeout(() => showSuccess('Ключ удалён!'), 500);
+    }
+
+    if (getUrlParam('answered') === '1') {
+        setTimeout(() => showSuccess('Ответ на запрос отправлен!'), 500);
+    }
+
+    setClippyGif('hello');
+
+    window.showAdminError = showError;
+    window.showAdminSuccess = showSuccess;
+});
+</script>
 {% endblock %}
