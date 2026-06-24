@@ -5,7 +5,8 @@ class Key(db.Model):
     __tablename__ = 'keys'
 
     id = db.Column(db.Integer, primary_key=True)
-    keyname = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    keyidentity = db.Column(db.String(64), unique=False, nullable=False)
+    keyname = db.Column(db.String(128), unique=True, nullable=False, index=True)
     username = db.Column(db.String(64), unique=False, nullable=False)
 
     def set_keyname(self, keyname):
@@ -14,11 +15,20 @@ class Key(db.Model):
     def set_username(self, username):
         self.username = username
 
+    def set_keyname_name(self, keyname_name):
+        self.keyidentity = keyname_name
+
+    def set_id(self, id):
+        self.id = id
+
     def get_id(self):
         return self.id
 
     def get_keyname(self):
         return self.keyname
+
+    def get_keyname_name(self):
+        return self.keyidentity
 
     def get_username(self):
         return self.username
@@ -26,13 +36,15 @@ class Key(db.Model):
     def __repr__(self):
         return f'<Key {self.keyname}>'
 
+
 class Request(db.Model):
     __tablename__ = 'requests'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=False, nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     quantity = db.Column(db.Integer, unique=False, nullable=False)
-    description = db.Column(db.String(1024), unique=False, nullable=True)
+    keygroup_name = db.Column(db.String(64), unique=True, nullable=False)
+    description = db.Column(db.String(1024), unique=False, nullable=False)
 
     def set_quantity(self, quantity):
         self.quantity = quantity
@@ -42,14 +54,61 @@ class Request(db.Model):
 
     def set_username(self, username):
         self.username = username
+
+    def set_id(self, id):
+        self.id = id
+
+    def set_keygroup_name(self, keygroup_name):
+        self.keygroup_name = keygroup_name
+
     def get_quantity(self):
         return self.quantity
+
+    def get_keygroup_name(self):
+        return self.keygroup_name
 
     def get_description(self):
         return self.description
 
     def __repr__(self):
         return f'<Request {self.description}>'
+
+
+class RequestAnswer(db.Model):
+    __tablename__ = 'requestAnswers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    verdict = db.Column(db.Boolean, unique=False, nullable=False)
+    answer = db.Column(db.String(1024), unique=False, nullable=False)
+
+    def set_username(self, username):
+        self.username = username
+
+    def set_id(self, id):
+        self.id = id
+
+    def set_answer(self, answer=""):
+        self.answer = answer
+
+    def set_verdict(self, verdict=False):
+        self.verdict = verdict
+
+    def get_verdict(self):
+        return self.verdict
+
+    def get_id(self):
+        return self.id
+
+    def get_username(self):
+        return self.username
+
+    def get_answer(self):
+        return self.answer
+
+    def __repr__(self):
+        return f'<RequestAnswer {self.answer}>'
+
 
 class User(db.Model):
     __tablename__ = 'users'

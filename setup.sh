@@ -94,17 +94,42 @@ echo "Передаем конфиг nginx.conf в /etc/nginx..."
 if [[ -f $PROJECT_DIR/nginx.conf  ]]; then
     if [[ -d /etc/nginx ]]; then
         cp -f -T "$PROJECT_DIR/nginx.conf" /etc/nginx/nginx.conf
-
-        if systemctl is-active --quiet nginx; then
-            systemctl reload nginx || systemctl restart nginx
-        fi
-        echo "nginx был настроен и перезагружен"
+        echo "успешно передали nginx.conf в /etc/nginx"
     else
         echo "nginx не установлен. Пропускаем конфигурацию"
     fi
 else
     echo "Не найден файл конфигурации nginx.conf. Настройте nginx вручную"
 fi
+
+echo "передаем конфиг docent-vpn в nginx..."
+if [[ -f "$PROJECT_DIR/docent-vpn_nginx.txt" ]]; then
+    if [[ -d /etc/nginx ]]; then
+        if [[ -f /etc/nginx/sites-enabled/default ]]; then
+           rm /etc/nginx/sites-enabled/default
+           echo "Удалили страницу nginx по умолчанию"
+        fi
+
+        cp "$PROJECT_DIR/docent-vpn_nginx.txt" /etc/nginx/sites-available/docent-vpn
+        ln -s /etc/nginx/sites-available/docent-vpn /etc/nginx/sites-enabled/
+
+        if nginx -t &>> "$LOGFILE"; then
+            echo "Успешно перенесли конфиг docent-vpn в nginx"
+        else
+            echo "В ходе передачи конфига docent-vpn в nginx. Подробности в $LOGFILE "
+        fi
+    else
+        echo "nginx не установлен. Пропускаем конфигурацию"
+    fi
+else
+    echo "Не найден файл конфигурации docent-vpn_nginx.txt. Пропускаем конфигурацию"
+fi
+
+#Перезагрузка nginx
+if systemctl is-active --quiet nginx; then
+systemctl reload nginx || systemctl restart nginx
+fi
+
 
 
 #Установка базы данных PostgreSQL
@@ -155,19 +180,39 @@ if command -v psql &>/dev/null; then
         if [[ -z "$SQL_USER_PASSWORD" ]]; then
             echo "Вы не ввели пароль, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите почту, которая будет использоваться для двухэтапной аутентификации при регистрации: " EMAIL
+        read -r -p "Введите почту (опционально, если вам не нужна двухэтапная аутентификация): " EMAIL
         if [[ -z "$EMAIL" ]]; then
             echo "Вы не ввели почту, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте): " EMAIL_PASSWORD
-        if [[ -z "$EMAIL_PASSWORD" ]]; then
-            echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
+        if [[ -n "$EMAIL" ]]; then
+            read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте): " EMAIL_PASSWORD
+
+            if [[ -z "$EMAIL_PASSWORD" ]]; then
+                echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
+            fi
         fi
+
 
         SECRET_KEY="$(python3 $PROJECT_DIR/backend/secret_key_gen.py)"
         echo "Для доступа к базе данных был сгенерирован ключ $SECRET_KEY. Ключ записан в envy.conf"
 
-        touch "$PROJECT_DIR/envy.conf"
+        #Открываем порты для почты
+        ufw allow out 587/tcp
+        ufw allow out 465/tcp
+
+        echo "Проверяем доступность SMTP-портов..."
+        if timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/587" 2>/dev/null; then
+            IS_MAIL_COOKED="False"
+            echo "Порт 587 доступен. Двухэтапная аутентификация будет работать."
+        elif timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/465" 2>/dev/null; then
+            IS_MAIL_COOKED="False"
+            echo "Порт 465 доступен. Будет использоваться SSL (порт 465)."
+        else
+            IS_MAIL_COOKED="True"
+            echo "SMTP-порты недоступны (вероятна блокировка провайдера). Двухэтапная аутентификация отключена."
+        fi
+
+        > "$PROJECT_DIR/envy.conf"
         chown "$SUDO_USER":"$SUDO_USER" "$PROJECT_DIR/envy.conf"
         chmod 600 "$PROJECT_DIR/envy.conf"
 
@@ -177,13 +222,16 @@ if command -v psql &>/dev/null; then
         echo "email_password $EMAIL_PASSWORD" >> "$PROJECT_DIR/envy.conf"
         echo "db_username_password $SQL_USER_PASSWORD" >> "$PROJECT_DIR/envy.conf"
         echo "secret_key $SECRET_KEY" >> "$PROJECT_DIR/envy.conf"
+        echo "is_mail_cooked $IS_MAIL_COOKED" >> "$PROJECT_DIR/envy.conf"
+
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
         sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';"
         sudo -u postgres psql -c "CREATE DATABASE $SQL_DB_NAME;"
-	sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
-	sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
-	sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
+	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
+	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+
 
 
         echo "Конфигурация PostgreSQL была завершена"
@@ -272,6 +320,32 @@ if [[ $? -ne 0 ]]; then
 fi
 
 echo "Конфигурация Python-окружения завершена."
+
+#Создание службы в systemd
+echo "Организуем автозапуск сервера через systemd..."
+if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
+    awk -v user="$SUDO_USER" \
+    -v group="$SUDO_USER" \
+    -v wd="$PROJECT_DIR/backend" \
+    -v env_path="$PROJECT_DIR/backend/.venv/bin" \
+    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app" '
+    /^User=/             { printf "User=%s\n", user; next }
+    /^Group=/            { printf "Group=%s\n", group; next }
+    /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
+    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
+    /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
+    { print }
+' "$PROJECT_DIR/docent-vpn.service" > "$PROJECT_DIR/docent-vpn.service.tmp" && mv "$PROJECT_DIR/docent-vpn.service.tmp" "$PROJECT_DIR/docent-vpn.service"
+    cp "$PROJECT_DIR/docent-vpn.service" /etc/systemd/system/docent-vpn.service
+
+    systemctl daemon-reload
+    systemctl enable --now docent-vpn
+
+    echo "автозапуск сервера был успешно настроен"
+else
+    echo "В проекте не найден файл docent-vpn.service. Пропускаем конфигурацию автозапуска"
+fi
+
 
 #Вывод итоговой информации
 echo "=============================="
