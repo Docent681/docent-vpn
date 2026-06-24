@@ -18,6 +18,9 @@ class Key(db.Model):
     def set_keyname_name(self, keyname_name):
         self.keyidentity = keyname_name
 
+    def set_id(self, id):
+        self.id = id
+
     def get_id(self):
         return self.id
 

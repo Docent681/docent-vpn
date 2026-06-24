@@ -160,8 +160,11 @@ def delete_key():
         if key.username != current_user:
             pass
         else:
-            db.session.delete(key)
-            db.session.commit()
+            if delete_user_key(key_id) == 0:
+                db.session.delete(key)
+                db.session.commit()
+            else:
+                error = "Не удалось удалить ключ"
 
     return redirect(url_for('user_dashboard', error=error))
 
@@ -174,15 +177,20 @@ def request_key():
         return redirect(url_for('login', error=error))
 
     key_amount = request.form.get("key_amount")
+    keygroup_name = request.form.get("keygroup_name")
     description = request.form.get("description")
 
-    req = Request()
-    req.set_username(current_user)
-    req.set_quantity(key_amount)
-    req.set_description(str(description))
+    if Request.query.filter(Request.username == current_user).first() is None:
+        req = Request()
+        req.set_username(current_user)
+        req.set_quantity(key_amount)
+        req.set_keygroup_name(keygroup_name)
+        req.set_description(str(description))
 
-    db.session.add(req)
-    db.session.commit()
+        db.session.add(req)
+        db.session.commit()
+    else:
+        error = "Вы уже отправляли запрос администраторам. Необходимо дождаться, пока они не ответят"
     return redirect(url_for('user_dashboard', error=error))
 
 #Основная страница администратора
@@ -248,10 +256,8 @@ def admin_answer_request():
     answer_message = request.form.get('answer_message')
     username = request.form.get('username')
 
-    if Request.query.filter(Request.id == req_id ).first() is not None:
-        req = Request.query.filter(Request.id == req_id ).first()
-        db.session.delete(req)
-        db.session.commit()
+    req = Request.query.filter(Request.id == req_id ).first()
+    if req is not None:
 
         answer = RequestAnswer()
         if RequestAnswer.query.filter(RequestAnswer.username == username).first() is not None:
@@ -264,18 +270,31 @@ def admin_answer_request():
             answer.set_answer("")
         else:
             answer.set_answer(answer_message)
+
         if answer_request == "positive":
+            for i in range(req.quantity):
+                keyname = f"{req.keygroup_name}{i}"
+                resp = create_key(name=keyname)
+                if resp != 1:
+                    new_key = Key()
+                    new_key.set_id(resp['id'])
+                    new_key.set_keyname_name(resp['name'])
+                    new_key.set_keyname(resp['accessUrl'])
+                    new_key.set_username(req.username)
+
+                    db.session.add(new_key)
+                    db.session.commit()
+                else:
+                    error = "Не удалось создать новый ключ"
             answer.set_verdict(True)
         else:
             answer.set_verdict(False)
 
+        db.session.delete(req)
         db.session.add(answer)
         db.session.commit()
     else:
         error = "Не удалось найти соответсвующий запрос"
-
-
-
 
     return redirect(url_for('admin_dashboard', error=error))
 
@@ -289,6 +308,8 @@ def create_new_admin():
 
     if User.query.filter(User.username == username).first() is not None:
         user = User.query.filter(User.username == username).first()
+        if user is not None:
+            user.set_set_is_admin(True)
     else:
         if password != password_repeat:
             error = "Пароли не совпали, попробуйте еще раз"
@@ -298,6 +319,8 @@ def create_new_admin():
         user.set_username(username)
         user.set_email(email)
         user.set_password(password)
+        user.set_is_admin(True)
+        user.set_is_confirmed(True)
     db.session.add(user)
     db.session.commit()
     return redirect(url_for('admin_dashboard', error=error))
