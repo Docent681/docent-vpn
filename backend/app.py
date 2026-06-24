@@ -190,7 +190,16 @@ def admin_dashboard():
 
 @app.route('/admin_delete_user', methods=['POST'])
 def admin_delete_user():
-    return redirect(url_for('admin_dashboard'))
+    error = None
+    user_id = request.form.get("user_id")
+    user = User.query.filter(User.id == user_id).first()
+    if user is None:
+        error = "Пользователь не найден в системе"
+    else:
+        db.session.delete(user)
+        db.session.commit()
+
+    return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/admin_delete_key', methods=['POST'])
 def admin_delete_key():
@@ -202,6 +211,7 @@ def admin_answer_request():
 
 @app.route('/create_new_admin', methods=['POST'])
 def create_new_admin():
+
     return redirect(url_for('admin_dashboard'))
 
 
