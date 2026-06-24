@@ -55,8 +55,14 @@ class Request(db.Model):
     def set_id(self, id):
         self.id = id
 
+    def set_keygroup_name(self, keygroup_name):
+        self.keygroup_name = keygroup_name
+
     def get_quantity(self):
         return self.quantity
+
+    def get_keygroup_name(self):
+        return self.keygroup_name
 
     def get_description(self):
         return self.description
@@ -70,6 +76,7 @@ class RequestAnswer(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    verdict = db.Column(db.Boolean, unique=False, nullable=False)
     answer = db.Column(db.String(1024), unique=False, nullable=False)
 
     def set_username(self, username):
@@ -80,6 +87,12 @@ class RequestAnswer(db.Model):
 
     def set_answer(self, answer=""):
         self.answer = answer
+
+    def set_verdict(self, verdict=False):
+        self.verdict = verdict
+
+    def get_verdict(self):
+        return self.verdict
 
     def get_id(self):
         return self.id

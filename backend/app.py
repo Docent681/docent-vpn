@@ -1,5 +1,6 @@
 from flask import Flask, redirect, render_template, url_for, request, session
 from flask_mailman import EmailMessage
+from sqlalchemy.orm import query
 from services import code_generate, create_key, delete_user_key
 from config import Config
 from extensions import db, migrate, mail
@@ -10,7 +11,7 @@ app.config.from_object(Config)
 db.init_app(app)
 mail.init_app(app)
 migrate.init_app(app, db)
-from models import User, Request, Key
+from models import RequestAnswer, User, Request, Key
 
 #Действия при прямом входе по URL
 @app.route('/')
@@ -136,6 +137,7 @@ def user_dashboard():
         return redirect(url_for('login', error=error))
     keys = Key.query.filter(Key.username == current_user).all()
 
+
     session['current_user_login'] = current_user
     return render_template('user_dashboard.html', keys=keys)
 
@@ -205,8 +207,17 @@ def admin_delete_user():
     if user is None:
         error = "Пользователь не найден в системе"
     else:
-        db.session.delete(user)
-        db.session.commit()
+        user_keys = Key.query.filter(Key.username == user.username).all()
+        for key in user_keys:
+            if delete_user_key(key.id) == 0:
+                db.session.delete(key)
+            else:
+                error = "Не получилось удалить ключ"
+        if error != "Не получилось удалить ключ":
+            db.session.delete(user)
+            db.session.commit()
+        else:
+            error = "Пользователь не был удален, так как не получилось удалить чать ключей"
 
     return redirect(url_for('admin_dashboard', error=error))
 
@@ -230,6 +241,42 @@ def admin_delete_key():
 @app.route('/admin_answer_request', methods=['POST'])
 def admin_answer_request():
     error = None
+
+    req_id = request.form.get('req_id')
+    keygroup_name = request.form.get('keygroup_name')
+    answer_request = request.form.get('answer_request')
+    answer_message = request.form.get('answer_message')
+    username = request.form.get('username')
+
+    if Request.query.filter(Request.id == req_id ).first() is not None:
+        req = Request.query.filter(Request.id == req_id ).first()
+        db.session.delete(req)
+        db.session.commit()
+
+        answer = RequestAnswer()
+        if RequestAnswer.query.filter(RequestAnswer.username == username).first() is not None:
+            old_answer = RequestAnswer.query.filter(RequestAnswer.username == username).first()
+            db.session.delete(old_answer)
+            db.session.commit()
+
+        answer.set_username(username)
+        if answer_message is None:
+            answer.set_answer("")
+        else:
+            answer.set_answer(answer_message)
+        if answer_request == "positive":
+            answer.set_verdict(True)
+        else:
+            answer.set_verdict(False)
+
+        db.session.add(answer)
+        db.session.commit()
+    else:
+        error = "Не удалось найти соответсвующий запрос"
+
+
+
+
     return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/create_new_admin', methods=['POST'])

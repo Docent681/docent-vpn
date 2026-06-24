@@ -102,7 +102,8 @@
         <th>Id</th>
         <th>Логин</th>
         <th>Количество ключей</th>
-        <th>Описание</th>
+        <th>Название группы ключей</th>
+        <th>Содержание ответа</th>
         <th>Ответить на запрос</th>
     </tr>
     {% for req in reqs %}
@@ -117,11 +118,17 @@
             {{ req.quantity }}
         </td>
         <td>
+            {{ req.keygroup_name }}
+        </td>
+
+        <td>
             {{ req.description }}
         </td>
         <td>
             <form action="{{ url_for('admin_answer_request') }}" method="POST">
                 <input type="hidden" name="req_id" value="{{ req.id }}">
+                <input type="hidden" name="keygroup_name" value="{{ req.keygroup_name }}">
+                <input type="hidden" name="username" value="{{ req.username }}">
 
                 <p>
                 <input type="radio" id="positive" name="answer_request" value="positive" checked>
