@@ -40,22 +40,26 @@ def register():
             user.set_email(email)
             user.set_password(password)
             user.set_is_admin(False)
-            user.set_is_confirmed(False)
+            user.set_is_confirmed(True)
+            #user.set_is_confirmed(False)
             db.session.add(user)
             db.session.commit()
 
-            session['user_id'] = user.get_id()
+            if Config.IS_MAIL_COOKED:
+                return redirect(url_for('login', error=error))
+            else:
+                session['user_id'] = user.get_id()
 
-            code = code_generate()
-            session['code'] = code
-            msg = EmailMessage(
-                "Код регистрации нового пользователя Docent VPN",
-                f"Используйте ваш персональный код {code} для регистрации в клиенте Docent VPN",
-                Config.MAIL_USERNAME,
-                [f"{email}"]
-            )
-            msg.send()
-            return redirect(url_for('verify'))
+                code = code_generate()
+                session['code'] = code
+                msg = EmailMessage(
+                    "Код регистрации нового пользователя Docent VPN",
+                    f"Используйте ваш персональный код {code} для регистрации в клиенте Docent VPN",
+                    Config.MAIL_USERNAME,
+                    [f"{email}"]
+                )
+                msg.send()
+                return redirect(url_for('verify', error=error))
 
     return render_template('register.html', error=error)
 
@@ -72,11 +76,11 @@ def verify():
             if user:
                 if user.get_is_confirmed():
                     session.clear()
-                    return redirect(url_for('register'))
+                    return redirect(url_for('register', error=error))
                 user.set_is_confirmed(True)
                 db.session.commit()
                 session.clear()
-                return redirect(url_for('login'))
+                return redirect(url_for('login', error=error))
             else:
                 error = "Произошла ошибка. Попробуйте зарегистрироваться еще раз"
                 db.session.delete(user)
@@ -117,17 +121,19 @@ def login():
             session['current_user_login'] = username
 
             if user_type == 'user_choice':
-                return redirect(url_for('user_dashboard'))
-            return redirect(url_for("admin_dashboard"))
+                return redirect(url_for('user_dashboard', error=error))
+            return redirect(url_for("admin_dashboard", error=error))
 
     return render_template('login.html', error=error)
 
 #Основная страница пользователя
 @app.route('/user_dashboard', methods=['GET'])
 def user_dashboard():
+    error = None
     current_user = session.get('current_user_login')
     if not current_user:
-        return redirect(url_for('login'))
+        error = "Необходимо войти в систему"
+        return redirect(url_for('login', error=error))
     keys = Key.query.filter(Key.username == current_user).all()
 
     session['current_user_login'] = current_user
@@ -135,13 +141,16 @@ def user_dashboard():
 
 @app.route('/delete_key', methods=['POST'])
 def delete_key():
+    error=None
     current_user = session.get('current_user_login')
     if not current_user:
-        return redirect(url_for('login'))
+        error = "Необходимо повторно войти в систему"
+        return redirect(url_for('login', error=error))
 
     key_id = request.form.get('key_id')
     if not key_id:
-        return redirect(url_for('user_dashboard'))
+        error = "Ключ для удаления не был найден"
+        return redirect(url_for('user_dashboard', error=error))
     key = Key.query.get(int(key_id))
     if key is None:
         pass
@@ -152,13 +161,15 @@ def delete_key():
             db.session.delete(key)
             db.session.commit()
 
-    return redirect(url_for('user_dashboard'))
+    return redirect(url_for('user_dashboard', error=error))
 
 @app.route('/request_key', methods=['POST'])
 def request_key():
+    error = None
     current_user = session.get('current_user_login')
     if not current_user:
-        return redirect(url_for('login'))
+        error = "Необходимо повторно войти в систему"
+        return redirect(url_for('login', error=error))
 
     key_amount = request.form.get("key_amount")
     description = request.form.get("description")
@@ -170,14 +181,16 @@ def request_key():
 
     db.session.add(req)
     db.session.commit()
-    return redirect(url_for('user_dashboard'))
+    return redirect(url_for('user_dashboard', error=error))
 
 #Основная страница администратора
 @app.route('/admin_dashboard', methods=['GET'])
 def admin_dashboard():
+    error = None
     current_admin = session.get('current_user_login')
     if not current_admin:
-        return redirect(url_for('login'))
+        error = "Необходимо повторно войти в систему"
+        return redirect(url_for('login', error=error))
     keys = Key.query.all()
     users = User.query.all()
     reqs = Request.query.all()
@@ -186,19 +199,49 @@ def admin_dashboard():
 
 @app.route('/admin_delete_user', methods=['POST'])
 def admin_delete_user():
-    return redirect(url_for('admin_dashboard'))
+    error = None
+    user_id = request.form.get("user_id")
+    user = User.query.filter(User.id == user_id).first()
+    if user is None:
+        error = "Пользователь не найден в системе"
+    else:
+        db.session.delete(user)
+        db.session.commit()
+
+    return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/admin_delete_key', methods=['POST'])
 def admin_delete_key():
-    return redirect(url_for('admin_dashboard'))
+    error = None
+    return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/admin_answer_request', methods=['POST'])
 def admin_answer_request():
-    return redirect(url_for('admin_dashboard'))
+    error = None
+    return redirect(url_for('admin_dashboard', error=error))
 
 @app.route('/create_new_admin', methods=['POST'])
 def create_new_admin():
-    return redirect(url_for('admin_dashboard'))
+    error = None
+    username = request.form.get('username')
+    email = request.form.get('username')
+    password = request.form.get('username')
+    password_repeat = request.form.get('username')
+
+    if User.query.filter(User.username == username).first() is not None:
+        user = User.query.filter(User.username == username).first()
+    else:
+        if password != password_repeat:
+            error = "Пароли не совпали, попробуйте еще раз"
+        elif password == None or password_repeat == None:
+            error = "При создании нового пользователя с правами администратора необходимо ввести для него пароль"
+        user = User()
+        user.set_username(username)
+        user.set_email(email)
+        user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return redirect(url_for('admin_dashboard', error=error))
 
 
 if __name__ == "__main__":

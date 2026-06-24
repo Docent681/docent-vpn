@@ -155,19 +155,39 @@ if command -v psql &>/dev/null; then
         if [[ -z "$SQL_USER_PASSWORD" ]]; then
             echo "Вы не ввели пароль, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите почту, которая будет использоваться для двухэтапной аутентификации при регистрации: " EMAIL
+        read -r -p "Введите почту (опционально, если вам не нужна двухэтапная аутентификация): " EMAIL
         if [[ -z "$EMAIL" ]]; then
             echo "Вы не ввели почту, не забудьте добавить недостающие данные вручную в envy.conf"
         fi
-        read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте): " EMAIL_PASSWORD
-        if [[ -z "$EMAIL_PASSWORD" ]]; then
-            echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
+        if [[ -n "$EMAIL" ]]; then
+            read -r -p "Введите специальный пароль приложения для используемой почты (необходимо сгенерировать вручную в google аккаунте): " EMAIL_PASSWORD
+
+            if [[ -z "$EMAIL_PASSWORD" ]]; then
+                echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
+            fi
         fi
+
 
         SECRET_KEY="$(python3 $PROJECT_DIR/backend/secret_key_gen.py)"
         echo "Для доступа к базе данных был сгенерирован ключ $SECRET_KEY. Ключ записан в envy.conf"
 
-        touch "$PROJECT_DIR/envy.conf"
+        #Открываем порты для почты
+        ufw allow out 587/tcp
+        ufw allow out 465/tcp
+
+        echo "Проверяем доступность SMTP-портов..."
+        if timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/587" 2>/dev/null; then
+            IS_MAIL_COOKED="False"
+            echo "Порт 587 доступен. Двухэтапная аутентификация будет работать."
+        elif timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/465" 2>/dev/null; then
+            IS_MAIL_COOKED="False"
+            echo "Порт 465 доступен. Будет использоваться SSL (порт 465)."
+        else
+            IS_MAIL_COOKED="True"
+            echo "SMTP-порты недоступны (вероятна блокировка провайдера). Двухэтапная аутентификация отключена."
+        fi
+
+        > "$PROJECT_DIR/envy.conf"
         chown "$SUDO_USER":"$SUDO_USER" "$PROJECT_DIR/envy.conf"
         chmod 600 "$PROJECT_DIR/envy.conf"
 
@@ -177,13 +197,16 @@ if command -v psql &>/dev/null; then
         echo "email_password $EMAIL_PASSWORD" >> "$PROJECT_DIR/envy.conf"
         echo "db_username_password $SQL_USER_PASSWORD" >> "$PROJECT_DIR/envy.conf"
         echo "secret_key $SECRET_KEY" >> "$PROJECT_DIR/envy.conf"
+        echo "is_mail_cooked $IS_MAIL_COOKED" >> "$PROJECT_DIR/envy.conf"
+
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
         sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';"
         sudo -u postgres psql -c "CREATE DATABASE $SQL_DB_NAME;"
-	sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
-	sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
-	sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
+	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
+	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+
 
 
         echo "Конфигурация PostgreSQL была завершена"
