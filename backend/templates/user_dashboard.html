@@ -12,11 +12,13 @@
 {% if keys %}
 <table>
     <tr>
+        <th>Имя ключа</th>
         <th>Ключ</th>
         <th>Действие</th>
     </tr>
     {% for key in keys %}
     <tr>
+        <td>{{ key.keyidentity }}</td>
         <td>{{ key.get_keyname() }}</td>
         <td>
             <form action="{{ url_for('delete_key') }}" method="POST">
@@ -39,6 +41,11 @@
     </p>
 
     <p>
+        <label for="keygroup_name">Имя группы ключей: </label>
+        <input type="text" id="keygroup_name" name="keygroup_name" required>
+    </p>
+
+    <p>
         <label for="description">Краткое описание запроса: </label>
         <input type="text" id="descriprion" name="description" required>
     </p>
@@ -49,6 +56,25 @@
 </form>
 <h2>Обратная связь от администратора</h2>
 <p>
-    Заглушка
+    {% if answer %}
+    <tr>
+        <th>Вердикт</th>
+        <th>Ответ администратора</th>
+    </tr>
+    <tr>
+        <td>
+            {% if verdict %}
+            <p>Одобрено</p>
+            {% else %}
+            <p>Отклонено</p>
+            {% endif %}
+        </td>
+        <td>
+            <p>{{ answer.answer }}</p>
+        </td>
+    </tr>
+    {% else %}
+    <p>Здесь вы увидите ответ на ваш запрос от администратора</p>
+    {% endif %}
 </p>
 {% endblock %}
