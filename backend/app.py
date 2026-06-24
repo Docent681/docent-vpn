@@ -302,9 +302,9 @@ def admin_answer_request():
 def create_new_admin():
     error = None
     username = request.form.get('username')
-    email = request.form.get('username')
-    password = request.form.get('username')
-    password_repeat = request.form.get('username')
+    email = request.form.get('email')
+    password = request.form.get('password')
+    password_repeat = request.form.get('password_repeat')
 
     if User.query.filter(User.username == username).first() is not None:
         user = User.query.filter(User.username == username).first()
