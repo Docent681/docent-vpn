@@ -57,7 +57,7 @@ def delete_user_key(id):
     }
 
     try:
-        resp = requests.get(url, timeout=10, headers=headers, verify=False)
+        resp = requests.delete(url, timeout=10, headers=headers, verify=False)
         resp.raise_for_status()
 
     except requests.RequestException as e:
