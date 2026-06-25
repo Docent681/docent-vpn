@@ -228,6 +228,15 @@ def admin_delete_user():
         for key in user_keys:
             delete_user_key(key.id)
             db.session.delete(key)
+
+        user_requests = Request.query.filter(Request.username == user.username).all()
+        for user_request in user_requests:
+            db.session.delete(user_request)
+
+        user_request_answers = RequestAnswer.query.filter(RequestAnswer.username == user.username).all()
+        for user_request_answer in user_request_answers:
+            db.session.delete(user_request_answer)
+
         db.session.delete(user)
         db.session.commit()
 
