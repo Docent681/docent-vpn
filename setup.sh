@@ -131,7 +131,6 @@ systemctl reload nginx || systemctl restart nginx
 fi
 
 
-
 #Установка базы данных PostgreSQL
 echo "Проверяем наличие postgresql..."
 if command -v psql &>/dev/null; then
@@ -223,6 +222,17 @@ if command -v psql &>/dev/null; then
         echo "db_username_password $SQL_USER_PASSWORD" >> "$PROJECT_DIR/envy.conf"
         echo "secret_key $SECRET_KEY" >> "$PROJECT_DIR/envy.conf"
         echo "is_mail_cooked $IS_MAIL_COOKED" >> "$PROJECT_DIR/envy.conf"
+
+        # Добавляем api_url и outline_secret_path из /opt/outline/access.txt
+        if [[ -f /opt/outline/access.txt ]]; then
+            API_URL_FULL=$(sed -n '2p' /opt/outline/access.txt)
+            API_BASE=$(echo "$API_URL_FULL" | sed -E 's|^(https?://[^/]+)/.*|\1|')
+            SECRET_PATH=$(echo "$API_URL_FULL" | sed -E 's|https?://[^/]+/||')
+            echo "api_url $API_BASE" >> "$PROJECT_DIR/envy.conf"
+            echo "outline_secret_path $SECRET_PATH" >> "$PROJECT_DIR/envy.conf"
+        else
+            echo "/opt/outline/access.txt не найден, api_url и outline_secret_path не записаны. Не забудьте добавить данные вручную в envy.conf"
+        fi
 
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
