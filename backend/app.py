@@ -224,10 +224,8 @@ def admin_delete_user():
         for key in user_keys:
             delete_user_key(key.id)
             db.session.delete(key)
-            db.session.delete(user)
-            db.session.commit()
-        else:
-            error = "Пользователь не был удален, так как не получилось удалить чать ключей"
+        db.session.delete(user)
+        db.session.commit()
 
     return redirect(url_for('admin_dashboard', error=error))
 
