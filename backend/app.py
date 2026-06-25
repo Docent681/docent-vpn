@@ -141,9 +141,9 @@ def user_dashboard():
     keys = Key.query.filter(Key.username == current_user).all()
     answer = RequestAnswer.query.filter(RequestAnswer.username == current_user).first()
     if Request.query.filter(Request.username == current_user).first is not None:
-        request_pending = True
+        request_pending = Request.query.filter(Request.username == current_user).first
     else:
-        request_pending = False
+        request_pending = None
 
     session['current_user_login'] = current_user
     return render_template('user_dashboard.html', keys=keys, answer=answer, request_pending=request_pending)
