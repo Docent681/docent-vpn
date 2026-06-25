@@ -3,12 +3,11 @@ if [ $# -lt 6 ]; then
     exit 1
 fi
 
-PASSWORD_HASH="$(echo "$6" | python3 ~/docent-vpn/backend/password_to_hash.py)"
+PASSWORD_HASH="$(echo "$5" | python3 ~/docent-vpn/backend/password_to_hash.py)"
 #$1 - имя пользователя
 #$2 - имя бд
-#$3 - имя таблицы пользователей
-#$4 - логин админа
-#$5 - почта админа
-#$6 - пароль админа
+#$3 - логин админа
+#$4 - почта админа
+#$5 - пароль админа
 
-psql -U "$1" -d "$2" -c "INSERT INTO users VALUES (0, '$4', '$5', '$PASSWORD_HASH', true, true);"
+psql -U "$1" -d "$2" -c "INSERT INTO users VALUES (0, '$3', '$4', '$PASSWORD_HASH', true, true);"
