@@ -206,6 +206,10 @@ def admin_dashboard():
     if not current_admin:
         error = "Необходимо повторно войти в систему"
         return redirect(url_for('login', error=error))
+    if User.query.filter(User.username == current_admin).first() is None:
+        error = "Админа не найдено в системе"
+
+        return redirect(url_for('login', error=error))
     keys = Key.query.all()
     users = User.query.all()
     reqs = Request.query.all()
@@ -312,6 +316,7 @@ def create_new_admin():
     else:
         if password != password_repeat:
             error = "Пароли не совпали, попробуйте еще раз"
+            return redirect(url_for('admin_dashboard', error=error))
         elif password == None or password_repeat == None:
             error = "При создании нового пользователя с правами администратора необходимо ввести для него пароль"
         user = User()
