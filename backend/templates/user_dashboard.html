@@ -140,8 +140,31 @@
     <!-- FEEDBACK SECTION -->
     <div class="feedback-section">
         <h2 class="section-title">📬 Статус запроса</h2>
-        
-        {% if answer %}
+
+        {% if request_pending %}
+        <!-- Если запрос ещё не обработан -->
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Описание запроса</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="badge-status" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">
+                                ⏳ На рассмотрении
+                            </span>
+                        </td>
+                        <td style="color: rgba(255,255,255,0.7);">{{ request_pending.description }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {% elif answer %}
         <!-- Если админ уже ответил -->
         <div class="table-wrapper">
             <table class="table">
@@ -166,29 +189,7 @@
             </table>
         </div>
         
-        {% elif request_pending %}
-        <!-- Если запрос ещё не обработан -->
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Статус</th>
-                        <th>Описание запроса</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <span class="badge-status" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">
-                                ⏳ На рассмотрении
-                            </span>
-                        </td>
-                        <td style="color: rgba(255,255,255,0.7);">{{ request_pending.description }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
+
         {% else %}
         <!-- Если нет ни запроса, ни ответа -->
         <div class="empty-state" style="padding: 20px;">

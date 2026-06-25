@@ -140,7 +140,10 @@ def user_dashboard():
         return redirect(url_for('login', error=error))
     keys = Key.query.filter(Key.username == current_user).all()
     answer = RequestAnswer.query.filter(RequestAnswer.username == current_user).first()
-    request_pending = Request.query.filter(Request.username == current_user).first()
+    if Request.query.filter(Request.username == current_user).first is not None:
+        request_pending = True
+    else:
+        request_pending = False
 
     session['current_user_login'] = current_user
     return render_template('user_dashboard.html', keys=keys, answer=answer, request_pending=request_pending)
@@ -164,7 +167,7 @@ def delete_key():
         if key.username != current_user:
             pass
         else:
-            if delete_user_key(key_id) == 0:
+            if delete_user_key(key_id) != 1:
                 db.session.delete(key)
                 db.session.commit()
             else:
@@ -195,7 +198,6 @@ def request_key():
     req.set_quantity(key_amount)
     req.set_keygroup_name(keygroup_name)
     req.set_description(str(description))
-    req.set_status('pending')
     db.session.add(req)
     db.session.commit()
 
@@ -225,7 +227,7 @@ def admin_delete_user():
     else:
         user_keys = Key.query.filter(Key.username == user.username).all()
         for key in user_keys:
-            if delete_user_key(key.id) == 0:
+            if delete_user_key(key.id) != 1:
                 db.session.delete(key)
             else:
                 error = "Не получилось удалить ключ"
@@ -244,7 +246,7 @@ def admin_delete_key():
     key_id = request.form.get('key_id')
     if Key.query.filter(Key.id == key_id).first() is not None:
         key = Key.query.filter(Key.id == key_id).first()
-        if delete_user_key(key_id) == 0:
+        if delete_user_key(id) != 1:
             db.session.delete(key)
             db.session.commit()
         else:
