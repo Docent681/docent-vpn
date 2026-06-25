@@ -167,11 +167,9 @@ def delete_key():
         if key.username != current_user:
             pass
         else:
-            if delete_user_key(key_id) != 1:
-                db.session.delete(key)
-                db.session.commit()
-            else:
-                error = "Не удалось удалить ключ"
+            delete_user_key(key_id)
+            db.session.delete(key)
+            db.session.commit()
 
     return redirect(url_for('user_dashboard', error=error))
 
@@ -227,11 +225,8 @@ def admin_delete_user():
     else:
         user_keys = Key.query.filter(Key.username == user.username).all()
         for key in user_keys:
-            if delete_user_key(key.id) != 1:
-                db.session.delete(key)
-            else:
-                error = "Не получилось удалить ключ"
-        if error != "Не получилось удалить ключ":
+            delete_user_key(key.id)
+            db.session.delete(key)
             db.session.delete(user)
             db.session.commit()
         else:
@@ -246,11 +241,9 @@ def admin_delete_key():
     key_id = request.form.get('key_id')
     if Key.query.filter(Key.id == key_id).first() is not None:
         key = Key.query.filter(Key.id == key_id).first()
-        if delete_user_key(id) != 1:
-            db.session.delete(key)
-            db.session.commit()
-        else:
-            error = "Не удалось удалить ключ"
+        delete_user_key(id)
+        db.session.delete(key)
+        db.session.commit()
     else:
         error = "Не удалось найти заданный ключ"
 
