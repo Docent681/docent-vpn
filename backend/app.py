@@ -71,7 +71,7 @@ def register():
                     session['user_id'] = user.get_id()
                     code = code_generate()
                     session['code'] = code
-                    send_sendgrid(code)
+                    send_sendgrid(email, code)
                     return redirect(url_for('verify', error=error))
                 else:
                     user.set_is_confirmed(True)

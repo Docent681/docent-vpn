@@ -8,23 +8,27 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 # Функция отправки писем через sendgrid
-def send_sendgrid(code=""):
+def send_sendgrid(to_email, code):
     message = Mail(
-        from_email= str(Config.email),
-        to_emails=str(Config.email),
+        from_email=Config.email,
+        to_emails=to_email,
         subject='Подтверждение регистрации в Docent-VPN',
-        html_content=f"<strong>Вам был отправлен код подтверждения регистрации {code}. Если вы не регистрировались в Docent-VPN, проигнорируйте это письмо</strong>")
+        html_content=f'<strong>Код подтверждения: {code}</strong>'
+    )
     try:
-        sg = SendGridAPIClient(Config.SENDGRID_API)
-        sg.set_sendgrid_data_residency("eu")
-        # uncomment the above line if you are sending mail using a regional EU subuser
-        response = sg.send(message)
+        if Config.SENDGRID_API is not None:
+            sg = SendGridAPIClient(Config.SENDGRID_API.strip())
+            # УБЕРИТЕ эту строку, если не уверены в регионе:
+            # sg.set_sendgrid_data_residency("eu")
+            response = sg.send(message)
+            current_app.logger.info(f"SendGrid status: {response.status_code}")
+            return True
+        else:
+            return False
     except Exception as e:
-        print(e.message)
+        current_app.logger.error(f"SendGrid error: {e}")
+        return False# Функция, использующаяся при двухэтапной аутентификации для формирования кода
 
-
-
-# Функция, использующаяся при двухэтапной аутентификации для формирования кода
 def code_generate():
     res = ""
     for i in range(0, 6):
