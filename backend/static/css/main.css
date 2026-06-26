@@ -1229,3 +1229,17 @@ body {
     border-color: #34d399;
     box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.1);
 }
+
+.clippy-gif.error,
+.clippy-gif.typing,
+.clippy-gif.success,
+.clippy-gif.pointing {
+    position: relative !important;
+    z-index: 9999 !important;
+    opacity: 1 !important;
+}
+
+.clippy-wrapper {
+    position: relative !important;
+    z-index: 100 !important;
+}

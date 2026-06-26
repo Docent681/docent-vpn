@@ -5,6 +5,64 @@
     .dashboard-container {
         max-width: 900px;
     }
+
+.key-cell {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.key-multiline {
+    flex: 1;
+    word-break: break-all;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #c084fc;
+    line-height: 1.6;
+    min-width: 0;
+}
+
+.btn-copy {
+    background: rgba(129, 140, 248, 0.15);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    color: #a78bfa;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+.btn-copy:hover {
+    background: rgba(129, 140, 248, 0.25);
+    transform: scale(1.05);
+}
+
+.btn-copy.copied {
+    background: rgba(52, 211, 153, 0.2);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #34d399;
+}
+
+@media (max-width: 600px) {
+    .key-multiline {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    .btn-copy {
+        font-size: 14px;
+        padding: 3px 8px;
+    }
+}
+
+
 </style>
 {% endblock %}
 
@@ -67,16 +125,23 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Имя ключа</th>
-                        <th>Ключ</th>
-                        <th style="text-align: right;">Действие</th>
+                        <th style="width: 15%;">Имя</th>
+                        <th style="width: 60%;">Ключ (Access URL)</th>
+                        <th style="width: 25%; text-align: right;">Действие</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for key in keys %}
                     <tr>
                         <td><strong style="color: #a78bfa;">{{ key.keyidentity }}</strong></td>
-                        <td><span class="key-name">{{ key.get_keyname() }}</span></td>
+                        <td>
+                            <div class="key-cell">
+                                <span class="key-multiline" id="key-{{ key.id }}">{{ key.get_keyname() }}</span>
+                                <button class="btn-copy" onclick="copyElementText('key-{{ key.id }}')" title="Скопировать ключ">
+                                    📋
+                                </button>
+                            </div>
+                        </td>
                         <td style="text-align: right;">
                             <form action="{{ url_for('delete_key') }}" method="POST" class="delete-key-form">
                                 <input type="hidden" name="key_id" value="{{ key.id }}">

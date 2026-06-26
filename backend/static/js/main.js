@@ -284,9 +284,60 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// ===== КОПИРОВАНИЕ ТЕКСТА =====
+async function copyToClipboard(text, buttonElement = null, duration = 2000) {
+    try {
+        await navigator.clipboard.writeText(text);
+        if (buttonElement) {
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = '✅';
+            buttonElement.classList.add('copied');
+            setTimeout(() => {
+                buttonElement.textContent = originalText;
+                buttonElement.classList.remove('copied');
+            }, duration);
+        }
+        return true;
+    } catch {
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (buttonElement) {
+                const originalText = buttonElement.textContent;
+                buttonElement.textContent = '✅';
+                buttonElement.classList.add('copied');
+                setTimeout(() => {
+                    buttonElement.textContent = originalText;
+                    buttonElement.classList.remove('copied');
+                }, duration);
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    }
+}
+
+function copyElementText(elementId, duration = 2000) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const text = element.textContent.trim();
+    const cell = element.closest('.key-cell');
+    const button = cell ? cell.querySelector('.btn-copy') : null;
+    copyToClipboard(text, button, duration);
+}
+
 // ========================================
 // ЭКСПОРТ ДЛЯ ИСПОЛЬЗОВАНИЯ В ДРУГИХ ФАЙЛАХ
 // ========================================
+window.copyToClipboard = copyToClipboard;
+window.copyElementText = copyElementText;
 window.setClippy = setClippy;
 window.updateClippySpeech = updateClippySpeech;
 window.showMessage = showMessage;
