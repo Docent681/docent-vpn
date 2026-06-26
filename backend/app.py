@@ -236,8 +236,10 @@ def login():
         session['current_user_login'] = user.username
 
         if user_type == 'user_choice':
+            write_log(user.username, f"Вошел в систему как пользователь")
             return {"success": True, "redirect": url_for('user_dashboard')}
         else:
+            write_log(user.username, f"Вошел в систему как администратор")
             return {"success": True, "redirect": url_for('admin_dashboard')}
 
     return render_template('login.html')
