@@ -96,7 +96,9 @@
         </div>
         <div class="clippy-speech" id="clippySpeech">
             {% if keys %}
-                <strong>👋 Привет!</strong> Смотри, у тебя есть <strong>{{ keys|length }}</strong> активных ключей!
+                <strong>📌 Смотри!</strong> Вот твои ключи! 
+                Их <strong>{{ keys|length }}</strong> штук. 
+                Можешь отозвать любой, если он больше не нужен.
             {% else %}
                 <strong>👋 Привет!</strong> У тебя пока нет ключей. Запроси их у администратора!
             {% endif %}
@@ -293,12 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if keys %}
     setTimeout(() => {
         setClippyGif('pointing', true);
-        updateSpeech(`
-            <strong>📌 Смотри!</strong> Вот твои ключи! 
-            Их <strong>{{ keys|length }}</strong> штук. 
-            Можешь отозвать любой, если он больше не нужен.
-        `, true);
-    }, 800);
+    }, 100);
     {% endif %}
 
     function showError(message) {
