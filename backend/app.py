@@ -176,16 +176,32 @@ def resend_code():
     except Exception as e:
         return {"success": False, "message": "Не удалось отправить письмо. Попробуйте позже."}, 500
 
+
+# ------------------------------------------------------------
+# Очистка логов
+# ------------------------------------------------------------
+@app.route('/clear_log', methods=['POST'])
+def clear_log():
+    error = None
+    logs = Log.query.all()
+    for log in logs:
+        db.session.delete(log)
+
+    db.session.commit()
+    return redirect(url_for('admin_dashboard', error=error))
+
+
 # ------------------------------------------------------------
 # Выход из системы
 # ------------------------------------------------------------
 @app.route('/logout')
 def logout():
+    error = None
     current_user = session.get('current_user_login')
     if current_user:
         write_log(current_user, "Выход из системы")
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('login', error=error))
 
 
 # ------------------------------------------------------------

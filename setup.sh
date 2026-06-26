@@ -66,6 +66,7 @@ if command -v ufw &>/dev/null; then
     fi
 
     echo "Включаем Фаерволл"
+    ufw enable
     else
         echo "Настройка UFW пропущена. Не забудьте открыть порты вручную."
     fi
@@ -205,6 +206,12 @@ if command -v psql &>/dev/null; then
                 echo "Вы не ввели специальный пароль для почты, не забудьте добавить недостающие данные вручную в envy.conf"
             fi
         fi
+
+        echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
+        read -r -p " Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
+        if [[ -z "$IS_SENDGRID_COOKED" ]]; then
+            read -r -p "Введите ваш sendgrid API: " SENDGRID_API
+
 
 
         SECRET_KEY="$(python3 $PROJECT_DIR/backend/secret_key_gen.py)"
