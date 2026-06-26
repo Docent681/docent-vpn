@@ -210,13 +210,19 @@ if command -v psql &>/dev/null; then
         echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
         read -r -p " Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
         if [[ -n "$IS_SENDGRID_COOKED" ]]; then
+            export IS_SENDGRID_COOKED="0"
+            echo "Вы решили использовать sendgrid"
             read -r -p "Введите ваш sendgrid API: " SENDGRID_API
             if [[ -z "$SENDGRID_API" ]]; then
                 echo "Вы не ввели ваш sendgrid API. Позже можно будет добавить ваш API в envy.conf"
             else
-                yes
+                echo "Ваш sendgrid API был записан в envy.conf"
             fi
         else
+            export IS_SENDGRID_API="1"
+            SENDGRID_API=""
+            echo "Вы решили не использовать sendgrid"
+        fi
 
 
 
@@ -263,6 +269,8 @@ if command -v psql &>/dev/null; then
             echo "/opt/outline/access.txt не найден, api_url и outline_secret_path не записаны. Не забудьте добавить данные вручную в envy.conf"
         fi
 
+        echo "is_sendgrid_cooked $IS_SENDGRID_COOKED" >> "$PROJECT_DIR/envy.conf"
+        echo "sendgrid_api $SENDGRID_API" >> "$PROJECT_DIR/envy.conf"
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
         sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';"
@@ -270,8 +278,6 @@ if command -v psql &>/dev/null; then
 	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
 	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
 	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
-
-
 
         echo "Конфигурация PostgreSQL была завершена"
     fi
