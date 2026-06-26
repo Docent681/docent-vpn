@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, url_for, request, session
 from flask_mailman import EmailMessage
-from services import code_generate, create_key, delete_user_key
+from services import code_generate, create_key, delete_user_key, send_sendgrid
 from config import Config
 from extensions import db, migrate, mail
 from models import RequestAnswer, User, Request, Key, Log
@@ -66,9 +66,17 @@ def register():
 
             # В зависимости от доступности почты выполняем разные сценарии
             if Config.IS_MAIL_COOKED:
-                user.set_is_confirmed(True)
-                write_log(username, "Успешная регистрация (без подтверждения почты)")
-                return redirect(url_for('login', error=error))
+                if not Config.IS_SENDGRID_COOKED:
+                    user.set_is_confirmed(False)
+                    session['user_id'] = user.get_id()
+                    code = code_generate()
+                    session['code'] = code
+                    send_sendgrid(code)
+                    return redirect(url_for('verify', error=error))
+                else:
+                    user.set_is_confirmed(True)
+                    write_log(username, "Успешная регистрация (без подтверждения почты)")
+                    return redirect(url_for('login', error=error))
             else:
                 user.set_is_confirmed(False)
                 session['user_id'] = user.get_id()

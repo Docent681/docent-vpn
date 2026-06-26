@@ -3,6 +3,26 @@ from random import randint
 import requests
 from flask import current_app
 from config import Config
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+# Функция отправки писем через sendgrid
+def seng_sendgrid(code=""):
+    message = Mail(
+        from_email= str(Config.email)
+        to_emails=str(Config.email),
+        subject='Подтверждение регистрации в Docent-VPN',
+        html_content=f"<strong>Вам был отправлен код подтверждения регистрации {code}. Если вы не регистрировались в Docent-VPN, проигнорируйте это письмо</strong>")
+    try:
+        sg = SendGridAPIClient(Config.SENDGRID_API)
+        sg.set_sendgrid_data_residency("eu")
+        # uncomment the above line if you are sending mail using a regional EU subuser
+        response = sg.send(message)
+    except Exception as e:
+        print(e.message)
+
+
 
 # Функция, использующаяся при двухэтапной аутентификации для формирования кода
 def code_generate():
