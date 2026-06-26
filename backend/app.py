@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, url_for, request, session
 from flask_mailman import EmailMessage
-from services import code_generate, create_key, delete_user_key
+from services import code_generate, create_key, delete_user_key, send_sendgrid
 from config import Config
 from extensions import db, migrate, mail
 from models import RequestAnswer, User, Request, Key, Log
@@ -65,10 +65,18 @@ def register():
             db.session.commit()
 
             # В зависимости от доступности почты выполняем разные сценарии
-            if Config.IS_MAIL_COOKED:
-                user.set_is_confirmed(True)
-                write_log(username, "Успешная регистрация (без подтверждения почты)")
-                return redirect(url_for('login', error=error))
+            if Config.IS_MAIL_COOKED == True:
+                if Config.IS_SENDGRID_COOKED == False:
+                    user.set_is_confirmed(False)
+                    session['user_id'] = user.get_id()
+                    code = code_generate()
+                    session['code'] = code
+                    send_sendgrid(email, code)
+                    return redirect(url_for('verify', error=error))
+                else:
+                    user.set_is_confirmed(True)
+                    write_log(username, "Успешная регистрация (без подтверждения почты)")
+                    return redirect(url_for('login', error=error))
             else:
                 user.set_is_confirmed(False)
                 session['user_id'] = user.get_id()
@@ -130,6 +138,43 @@ def verify():
 
     return render_template('verify.html', error=error)
 
+# ------------------------------------------------------------
+# Повторная отправка кода для регистрации
+# ------------------------------------------------------------
+@app.route('/resend_code', methods=['POST'])
+def resend_code():
+    user_id = session.get('user_id')
+    if not user_id:
+        return {"success": False, "message": "Сессия истекла. Зарегистрируйтесь заново."}, 400
+
+    user = User.query.get(user_id)
+    if not user or user.get_is_confirmed():
+        return {"success": False, "message": "Пользователь не найден или уже подтверждён."}, 400
+
+    code = code_generate()
+    session['code'] = code
+
+    # Выбираем способ отправки в зависимости от настроек
+    try:
+        if Config.IS_MAIL_COOKED == False:
+            # Обычный SMTP
+            msg = EmailMessage(
+                "Повторный код регистрации Docent VPN",
+                f"Ваш новый код подтверждения: {code}",
+                Config.MAIL_USERNAME,
+                [user.email]
+            )
+            msg.send()
+        elif Config.IS_SENDGRID_COOKED == False:
+            # SendGrid
+            if not send_sendgrid(user.email, code):
+                raise Exception("SendGrid вернул ошибку")
+        else:
+            return {"success": False, "message": "Почта недоступна."}, 500
+
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": "Не удалось отправить письмо. Попробуйте позже."}, 500
 
 # ------------------------------------------------------------
 # Выход из системы

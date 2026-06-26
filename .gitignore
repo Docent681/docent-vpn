@@ -3,3 +3,4 @@ backend/__pycache__
 backend/migrations
 envy.conf
 installation.log
+sendgrid.env
