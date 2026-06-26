@@ -3,8 +3,32 @@ from random import randint
 import requests
 from flask import current_app
 from config import Config
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
-# Функция, использующаяся при двухэтапной аутентификации для формирования кода
+# Функция отправки писем через sendgrid
+def send_sendgrid(to_email, code):
+    message = Mail(
+        from_email=Config.email,
+        to_emails=to_email,
+        subject='Подтверждение регистрации в Docent-VPN',
+        html_content=f'<strong>Код подтверждения: {code}</strong>'
+    )
+    try:
+        if Config.SENDGRID_API is not None:
+            sg = SendGridAPIClient(Config.SENDGRID_API.strip())
+            # УБЕРИТЕ эту строку, если не уверены в регионе:
+            # sg.set_sendgrid_data_residency("eu")
+            response = sg.send(message)
+            current_app.logger.info(f"SendGrid status: {response.status_code}")
+            return True
+        else:
+            return False
+    except Exception as e:
+        current_app.logger.error(f"SendGrid error: {e}")
+        return False# Функция, использующаяся при двухэтапной аутентификации для формирования кода
+
 def code_generate():
     res = ""
     for i in range(0, 6):
