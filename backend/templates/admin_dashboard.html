@@ -484,33 +484,58 @@ document.addEventListener('DOMContentLoaded', function() {
         setClippy(clippy, gifKey, { isError, isSuccess });
     }
 
-    function showError(message) {
-        errorText.textContent = message || 'Произошла ошибка. Попробуйте снова.';
-        errorMsg.classList.add('show');
-        setClippyGif('error', true);
-        loadingOverlay.classList.remove('show');
-        setTimeout(() => {
-            errorMsg.classList.remove('show');
-            setClippyGif('hello');
-        }, 5000);
-    }
-
-    function showSuccess(message) {
-        successText.textContent = message || 'Операция выполнена успешно!';
-        successMsg.classList.add('show');
-        setClippyGif('success', false, true);
-        loadingOverlay.classList.remove('show');
-        setTimeout(() => {
-            successMsg.classList.remove('show');
-            setClippyGif('hello');
-        }, 4000);
-    }
-
+    // ===== СОЗДАНИЕ АДМИНИСТРАТОРА (AJAX) =====
     adminForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Собираем данные
+        const formData = new FormData(this);
+        const data = {
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            password_repeat: formData.get('password_repeat')
+        };
+
+        // Показываем загрузку
         loadingOverlay.classList.add('show');
         setClippyGif('typing');
+
+        // Отправляем запрос
+        fetch('{{ url_for("create_new_admin") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            loadingOverlay.classList.remove('show');
+
+            if (result.success) {
+                showPopup('success', 'Успешно!', result.message || 'Администратор создан!');
+                adminForm.reset();
+                setClippyGif('hello');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                setClippyGif('error', true);
+                showPopup('error', 'Ошибка', result.message || 'Произошла ошибка');
+            }
+        })
+        .catch(() => {
+            loadingOverlay.classList.remove('show');
+            setClippyGif('error', true);
+            showPopup('error', 'Ошибка', 'Не удалось подключиться к серверу');
+        });
     });
 
+    // ===== ОБРАБОТКА ПАРАМЕТРОВ URL =====
+    // Удаляем старую проверку error === '1'
+    // Оставляем только для других операций (удаление пользователя, ключа и т.д.)
+    
     if (getUrlParam('error') === '1') {
         setTimeout(() => showError('Ошибка при выполнении операции'), 500);
     }
@@ -533,6 +558,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (getUrlParam('log_cleared') === '1') {
         setTimeout(() => showSuccess('Лог успешно очищен!'), 500);
+    }
+
+    // Если есть параметр error с текстом (не через '1')
+    const errorParam = getUrlParam('error');
+    if (errorParam && errorParam !== '1') {
+        setTimeout(() => {
+            showPopup('error', 'Ошибка', decodeURIComponent(errorParam));
+        }, 500);
     }
 
     setClippyGif('hello');

@@ -463,83 +463,71 @@ def admin_answer_request():
 # ------------------------------------------------------------
 @app.route('/create_new_admin', methods=['POST'])
 def create_new_admin():
-    error = None
     current_admin = session.get('current_user_login')
-    username = request.form.get('username')
-    email = request.form.get('email')
-    password = request.form.get('password')
-    password_repeat = request.form.get('password_repeat')
+    
+    # Проверяем, JSON ли пришёл
+    if request.is_json:
+        data = request.get_json()
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        password_repeat = data.get('password_repeat')
+    else:
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        password_repeat = request.form.get('password_repeat')
 
     # ===== 1. Проверяем: введён логин ИЛИ почта =====
     if not username and not email:
-        error = "Укажите логин или почту"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
+        return {"success": False, "message": "Укажите логин или почту"}, 400
 
-    # ===== 2. Ищем существующего пользователя по логину ИЛИ почте =====
+    # ===== 2. Проверяем: пароли совпадают (если введены) =====
+    if password and password_repeat and password != password_repeat:
+        return {"success": False, "message": "Пароли не совпадают"}, 400
+
+    # ===== 3. Ищем существующего пользователя по логину ИЛИ почте =====
     existing_user = None
     if username:
         existing_user = User.query.filter(User.username == username).first()
     if not existing_user and email:
         existing_user = User.query.filter(User.email == email).first()
 
-    # ===== 3. Если пользователь уже существует =====
+    # ===== 4. Если пользователь уже существует =====
     if existing_user:
         # Проверяем, не админ ли уже
         if existing_user.is_admin:
-            error = f"Пользователь '{existing_user.username}' уже является администратором"
-            write_log(current_admin, f"Ошибка: {error}")
-            return redirect(url_for('admin_dashboard', error=error))
+            return {"success": False, "message": f"Пользователь '{existing_user.username}' уже является администратором"}, 400
         
-        # Обновляем поля, если они переданы и отличаются
+        # Обновляем поля, если они переданы
         if username and existing_user.username != username:
-            # Проверяем, не занят ли логин другим пользователем
             existing_by_username = User.query.filter(User.username == username).first()
             if existing_by_username and existing_by_username.id != existing_user.id:
-                error = f"Логин '{username}' уже используется пользователем '{existing_by_username.username}'"
-                write_log(current_admin, f"Ошибка: {error}")
-                return redirect(url_for('admin_dashboard', error=error))
+                return {"success": False, "message": f"Логин '{username}' уже используется"}, 400
             existing_user.set_username(username)
             
         if email and existing_user.email != email:
-            # Проверяем, не занята ли почта другим пользователем
             existing_by_email = User.query.filter(User.email == email).first()
             if existing_by_email and existing_by_email.id != existing_user.id:
-                error = f"Почта '{email}' уже используется пользователем '{existing_by_email.username}'"
-                write_log(current_admin, f"Ошибка: {error}")
-                return redirect(url_for('admin_dashboard', error=error))
+                return {"success": False, "message": f"Почта '{email}' уже используется"}, 400
             existing_user.set_email(email)
         
-        # Делаем админом (пароль не нужен)
         existing_user.set_is_admin(True)
         db.session.commit()
         
         write_log(current_admin, f"Пользователю '{existing_user.username}' выданы права администратора")
-        return redirect(url_for('admin_dashboard', error=error))
+        return {"success": True, "message": f"Пользователь '{existing_user.username}' стал администратором"}, 200
 
-    # ===== 4. Создаём нового пользователя =====
-    # Для нового пользователя нужны логин, почта и пароль
+    # ===== 5. Создаём нового пользователя =====
     if not username:
-        error = "Для нового пользователя необходимо указать логин"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
+        return {"success": False, "message": "Для нового пользователя необходимо указать логин"}, 400
     
     if not email:
-        error = "Для нового пользователя необходимо указать почту"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
+        return {"success": False, "message": "Для нового пользователя необходимо указать почту"}, 400
     
     if not password or not password_repeat:
-        error = "Для нового пользователя необходимо ввести пароль"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
-    
-    if password != password_repeat:
-        error = "Пароли не совпадают"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
+        return {"success": False, "message": "Для нового пользователя необходимо ввести пароль"}, 400
 
-    # Создаём нового администратора
     user = User()
     user.set_username(username)
     user.set_email(email)
@@ -550,7 +538,7 @@ def create_new_admin():
     db.session.add(user)
     db.session.commit()
     write_log(current_admin, f"Создан новый администратор '{username}'")
-    return redirect(url_for('admin_dashboard', error=error))
+    return {"success": True, "message": f"Администратор '{username}' успешно создан"}, 200
 
 
 
