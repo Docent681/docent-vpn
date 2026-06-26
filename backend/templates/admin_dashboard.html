@@ -5,9 +5,19 @@
     .admin-container {
         max-width: 1200px;
     }
+
+    /* ===== ЦЕНТРИРОВАНИЕ ФОРМЫ ===== */
+    .admin-form-wrapper {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
     .admin-form {
         max-width: 500px;
+        width: 100%;
     }
+
     .request-form-inline .radio-group {
         display: flex;
         gap: 12px;
@@ -48,6 +58,71 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+    }
+
+    /* ===== КЛЮЧИ В НЕСКОЛЬКО СТРОК ===== */
+    .key-cell {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        max-width: 100%;
+    }
+
+    .key-multiline {
+        flex: 1;
+        word-break: break-all;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: #c084fc;
+        line-height: 1.6;
+        min-width: 0;
+    }
+
+    @media (max-width: 600px) {
+        .key-multiline {
+            font-size: 10px;
+            padding: 4px 8px;
+        }
+    }
+
+    /* ===== ЗАГОЛОВОК НЕ ОБРЕЗАЕТСЯ ===== */
+    .brand-title.admin {
+        background: linear-gradient(135deg, #f472b6, #a78bfa, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: inline-block;
+    }
+
+    /* ===== КНОПКА ОЧИСТКИ ЛОГА ===== */
+    .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .btn-clear-log {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+        padding: 6px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .btn-clear-log:hover {
+        background: rgba(239, 68, 68, 0.25);
+        transform: scale(1.02);
     }
 </style>
 {% endblock %}
@@ -197,10 +272,10 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Имя ключа</th>
-                    <th>Ключ</th>
-                    <th>Владелец</th>
+                    <th style="width: 10%;">ID</th>
+                    <th style="width: 15%;">Имя ключа</th>
+                    <th style="width: 55%;">Ключ</th>
+                    <th style="width: 20%;">Владелец</th>
                     <th style="text-align: right;">Действие</th>
                 </tr>
             </thead>
@@ -209,12 +284,16 @@
                 <tr>
                     <td><code style="color: rgba(255,255,255,0.4);">#{{ key.id }}</code></td>
                     <td><strong style="color: #a78bfa;">{{ key.keyidentity }}</strong></td>
-                    <td><span class="key-name">{{ key.keyname }}</span></td>
+                    <td>
+                        <div class="key-cell">
+                            <span class="key-multiline">{{ key.keyname }}</span>
+                        </div>
+                    </td>
                     <td><strong style="color: #f472b6;">{{ key.username }}</strong></td>
                     <td style="text-align: right;">
                         <form action="{{ url_for('admin_delete_key') }}" method="POST" style="display: inline;">
                             <input type="hidden" name="key_id" value="{{ key.id }}">
-                            <button type="submit" class="btn-danger" onclick="return confirm('Удалить ключ {{ key.keyname }}?')">
+                            <button type="submit" class="btn-danger" onclick="return confirm('Удалить ключ {{ key.keyidentity }}?')">
                                 🗑️ Удалить
                             </button>
                         </form>
@@ -234,40 +313,47 @@
     <hr class="section-divider">
 
     <!-- LOGS TABLE -->
-<h2 class="section-title">
-    📋 Лог действий пользователей
-    <span class="badge">{{ logs|length if logs else 0 }}</span>
-</h2>
-
-<div class="table-wrapper">
-    {% if logs %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Логин</th>
-                <th>Дата</th>
-                <th>Действие</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
-                <td><code style="color: rgba(255,255,255,0.4);">#{{ log.id }}</code></td>
-                <td><strong style="color: #fff;">{{ log.username }}</strong></td>
-                <td style="color: rgba(255,255,255,0.6);">{{ log.date.strftime('%d.%m.%Y %H:%M') }}</td>
-                <td style="color: rgba(255,255,255,0.8);">{{ log.action }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="empty-state">
-        <span class="empty-icon">📋</span>
-        Записей в логе пока нет
+    <div class="log-header">
+        <h2 class="section-title" style="margin-bottom: 0;">
+            📋 Лог действий пользователей
+            <span class="badge">{{ logs|length if logs else 0 }}</span>
+        </h2>
+        <form action="{{ url_for('clear_log') }}" method="POST" style="display: inline;">
+            <button type="submit" class="btn-clear-log" onclick="return confirm('Очистить весь лог? Это действие нельзя отменить.')">
+                🗑️ Очистить лог
+            </button>
+        </form>
     </div>
-    {% endif %}
-</div>
+
+    <div class="table-wrapper">
+        {% if logs %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Дата</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td><code style="color: rgba(255,255,255,0.4);">#{{ log.id }}</code></td>
+                    <td><strong style="color: #fff;">{{ log.username }}</strong></td>
+                    <td style="color: rgba(255,255,255,0.6);">{{ log.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td style="color: rgba(255,255,255,0.8);">{{ log.action }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📋</span>
+            Записей в логе пока нет
+        </div>
+        {% endif %}
+    </div>
 
     <hr class="section-divider">
 
@@ -342,34 +428,40 @@
 
     <hr class="section-divider">
 
-    <!-- CREATE ADMIN -->
-    <h2 class="section-title">👑 Создать нового администратора</h2>
-    
-    <form action="{{ url_for('create_new_admin') }}" method="POST" class="admin-form" id="createAdminForm">
-        <div class="form-group">
-            <label for="admin_username">👤 Логин</label>
-            <input type="text" id="admin_username" name="username" placeholder="Придумайте логин" required minlength="3" maxlength="30">
+    <!-- CREATE ADMIN (центрированная форма) -->
+    <div class="admin-form-wrapper">
+        <div>
+            <h2 class="section-title" style="text-align: center; justify-content: center;">
+                👑 Создать нового администратора
+            </h2>
+            
+            <form action="{{ url_for('create_new_admin') }}" method="POST" class="admin-form" id="createAdminForm">
+                <div class="form-group">
+                    <label for="admin_username">👤 Логин</label>
+                    <input type="text" id="admin_username" name="username" placeholder="Придумайте логин" required minlength="3" maxlength="30">
+                </div>
+
+                <div class="form-group">
+                    <label for="admin_email">📧 Почта</label>
+                    <input type="email" id="admin_email" name="email" placeholder="example@mail.com" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="admin_password">🔑 Пароль</label>
+                        <input type="password" id="admin_password" name="password" placeholder="Пароль" required minlength="8">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin_password_repeat">🔁 Повторите</label>
+                        <input type="password" id="admin_password_repeat" name="password_repeat" placeholder="Повторите пароль" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="createAdminBtn">👑 Создать администратора</button>
+            </form>
         </div>
-
-        <div class="form-group">
-            <label for="admin_email">📧 Почта</label>
-            <input type="email" id="admin_email" name="email" placeholder="example@mail.com" required>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="admin_password">🔑 Пароль</label>
-                <input type="password" id="admin_password" name="password" placeholder="Пароль" required minlength="8">
-            </div>
-
-            <div class="form-group">
-                <label for="admin_password_repeat">🔁 Повторите</label>
-                <input type="password" id="admin_password_repeat" name="password_repeat" placeholder="Повторите пароль" required>
-            </div>
-        </div>
-
-        <button type="submit" class="btn-primary" id="createAdminBtn">👑 Создать администратора</button>
-    </form>
+    </div>
 </div>
 
 <script>
@@ -431,6 +523,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (getUrlParam('answered') === '1') {
         setTimeout(() => showSuccess('Ответ на запрос отправлен!'), 500);
+    }
+
+    if (getUrlParam('log_cleared') === '1') {
+        setTimeout(() => showSuccess('Лог успешно очищен!'), 500);
     }
 
     setClippyGif('hello');
