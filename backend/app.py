@@ -491,10 +491,23 @@ def create_new_admin():
             write_log(current_admin, f"Ошибка: {error}")
             return redirect(url_for('admin_dashboard', error=error))
         
-        # Обновляем поля, если они переданы
-        if username and not existing_user.username:
+        # Обновляем поля, если они переданы и отличаются
+        if username and existing_user.username != username:
+            # Проверяем, не занят ли логин другим пользователем
+            existing_by_username = User.query.filter(User.username == username).first()
+            if existing_by_username and existing_by_username.id != existing_user.id:
+                error = f"Логин '{username}' уже используется пользователем '{existing_by_username.username}'"
+                write_log(current_admin, f"Ошибка: {error}")
+                return redirect(url_for('admin_dashboard', error=error))
             existing_user.set_username(username)
-        if email and not existing_user.email:
+            
+        if email and existing_user.email != email:
+            # Проверяем, не занята ли почта другим пользователем
+            existing_by_email = User.query.filter(User.email == email).first()
+            if existing_by_email and existing_by_email.id != existing_user.id:
+                error = f"Почта '{email}' уже используется пользователем '{existing_by_email.username}'"
+                write_log(current_admin, f"Ошибка: {error}")
+                return redirect(url_for('admin_dashboard', error=error))
             existing_user.set_email(email)
         
         # Делаем админом (пароль не нужен)
@@ -505,7 +518,17 @@ def create_new_admin():
         return redirect(url_for('admin_dashboard', error=error))
 
     # ===== 4. Создаём нового пользователя =====
-    # Для нового пользователя пароль обязателен
+    # Для нового пользователя нужны логин, почта и пароль
+    if not username:
+        error = "Для нового пользователя необходимо указать логин"
+        write_log(current_admin, f"Ошибка: {error}")
+        return redirect(url_for('admin_dashboard', error=error))
+    
+    if not email:
+        error = "Для нового пользователя необходимо указать почту"
+        write_log(current_admin, f"Ошибка: {error}")
+        return redirect(url_for('admin_dashboard', error=error))
+    
     if not password or not password_repeat:
         error = "Для нового пользователя необходимо ввести пароль"
         write_log(current_admin, f"Ошибка: {error}")
@@ -516,18 +539,10 @@ def create_new_admin():
         write_log(current_admin, f"Ошибка: {error}")
         return redirect(url_for('admin_dashboard', error=error))
 
-    # Создаём нового пользователя
+    # Создаём нового администратора
     user = User()
-    
-    # Логин обязателен для нового пользователя
-    if not username:
-        error = "Для нового пользователя необходимо указать логин"
-        write_log(current_admin, f"Ошибка: {error}")
-        return redirect(url_for('admin_dashboard', error=error))
-    
     user.set_username(username)
-    if email:
-        user.set_email(email)
+    user.set_email(email)
     user.set_password(password)
     user.set_is_admin(True)
     user.set_is_confirmed(True)
@@ -536,6 +551,7 @@ def create_new_admin():
     db.session.commit()
     write_log(current_admin, f"Создан новый администратор '{username}'")
     return redirect(url_for('admin_dashboard', error=error))
+
 
 
 # ------------------------------------------------------------
