@@ -31,14 +31,8 @@
         <h1 class="brand-title">🔒 Docent-VPN</h1>
         <p class="brand-subtitle"><span>✦</span> Управляй своим VPN-сервером <span>✦</span></p>
 
-        <!-- ERROR MESSAGE -->
-        <div class="message error" id="errorMessage">
-            <span class="msg-icon">⚠️</span>
-            <span id="errorText">Неверный логин или пароль</span>
-        </div>
-
         <!-- FORM -->
-        <form action="{{ url_for('login') }}" method="POST" id="loginForm">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="username">👤 Логин или почта</label>
                 <input type="text" id="username" name="username" placeholder="Введите логин или email" required autofocus>
@@ -78,8 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const clippy = document.getElementById('clippyGif');
     const username = document.getElementById('username');
     const password = document.getElementById('password');
-    const errorMsg = document.getElementById('errorMessage');
-    const errorText = document.getElementById('errorText');
     const loginForm = document.getElementById('loginForm');
     const loadingOverlay = document.getElementById('loadingOverlay');
     const loginBtn = document.getElementById('loginBtn');
@@ -88,25 +80,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setClippy(clippy, gifKey, { isError });
     }
 
-    function showError(message) {
-        errorText.textContent = message;
-        errorMsg.classList.add('show');
-        setClippyGif('error', true);
-        username.classList.add('error');
-        password.classList.add('error');
-        loadingOverlay.classList.remove('show');
-        loginBtn.disabled = false;
-        
-        setTimeout(() => {
-            errorMsg.classList.remove('show');
-            username.classList.remove('error');
-            password.classList.remove('error');
-            if (!username.value && !password.value) {
-                setClippyGif('hello');
-            }
-        }, 5000);
-    }
+    setClippyGif('hello');
 
+    // Фокус/блур для Clippy
     username.addEventListener('focus', function() { setClippyGif('typing'); });
     username.addEventListener('blur', function() {
         if (!this.value && !password.value) setClippyGif('hello');
@@ -116,34 +92,62 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!username.value && !this.value) setClippyGif('hello');
     });
 
+    // Убираем ошибки при вводе
     username.addEventListener('input', function() {
-        if (this.classList.contains('error')) {
-            this.classList.remove('error');
-            errorMsg.classList.remove('show');
-        }
+        this.classList.remove('error');
     });
     password.addEventListener('input', function() {
-        if (this.classList.contains('error')) {
-            this.classList.remove('error');
-            errorMsg.classList.remove('show');
-        }
+        this.classList.remove('error');
     });
 
+    // Отправка формы через AJAX
     loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Собираем данные
+        const formData = new FormData(this);
+        const data = {
+            username: formData.get('username'),
+            password: formData.get('password'),
+            user_type: formData.get('user_type')
+        };
+
+        // Показываем загрузку
         loadingOverlay.classList.add('show');
         loginBtn.disabled = true;
         setClippyGif('hello');
+
+        // Отправляем запрос
+        fetch('{{ url_for("login") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            loadingOverlay.classList.remove('show');
+            loginBtn.disabled = false;
+
+            if (result.success) {
+                // Успешный вход
+                window.location.href = result.redirect;
+            } else {
+                // Ошибка
+                setClippyGif('error', true);
+                username.classList.add('error');
+                password.classList.add('error');
+                showPopup('error', 'Ошибка входа', result.message || 'Неверный логин или пароль');
+            }
+        })
+        .catch(() => {
+            loadingOverlay.classList.remove('show');
+            loginBtn.disabled = false;
+            setClippyGif('error', true);
+            showPopup('error', 'Ошибка', 'Не удалось подключиться к серверу');
+        });
     });
-
-    setClippyGif('hello');
-
-    if (getUrlParam('error') === '1') {
-        setTimeout(() => {
-            showError('Неверные учётные данные. Проверьте логин и пароль.');
-        }, 500);
-    }
-
-    window.showLoginError = function(message) { showError(message); };
 });
 </script>
 {% endblock %}

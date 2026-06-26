@@ -209,38 +209,38 @@ def logout():
 # ------------------------------------------------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    error = None
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user_type = request.form.get('user_type')
+        # Проверяем, JSON ли пришёл
+        if request.is_json:
+            data = request.get_json()
+            username = data.get('username')
+            password = data.get('password')
+            user_type = data.get('user_type')
+        else:
+            username = request.form.get('username')
+            password = request.form.get('password')
+            user_type = request.form.get('user_type')
 
         user = User.query.filter((User.username == username) | (User.email == username)).first()
+        
         if user is None:
-            error = "Неверный логин или пароль"
+            return {"success": False, "message": "Неверный логин или пароль"}, 400
         elif not user.check_password(password):
-            error = "Неверный логин или пароль"
+            return {"success": False, "message": "Неверный логин или пароль"}, 400
         elif not user.get_is_confirmed():
-            error = "Пожалуйста, подтвердите регистрацию по коду из письма"
+            return {"success": False, "message": "Пожалуйста, подтвердите регистрацию по коду из письма"}, 400
         elif user_type == 'admin_choice' and not user.is_admin:
-            error = "У вас нет прав администратора"
+            return {"success": False, "message": "У вас нет прав администратора"}, 400
 
-        if error:
-            write_log(username if username else 'неизвестный', f"Ошибка входа: {error}")
-            return render_template('login.html', error=error)
-
-        # Успешный вход
         session.clear()
         session['current_user_login'] = username
 
         if user_type == 'user_choice':
-            write_log(username, "Вход в систему как пользователь")
-            return redirect(url_for('user_dashboard', error=error))
+            return {"success": True, "redirect": url_for('user_dashboard')}
         else:
-            write_log(username, "Вход в систему как администратор")
-            return redirect(url_for("admin_dashboard", error=error))
+            return {"success": True, "redirect": url_for('admin_dashboard')}
 
-    return render_template('login.html', error=error)
+    return render_template('login.html')
 
 
 # ------------------------------------------------------------

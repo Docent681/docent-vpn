@@ -333,9 +333,39 @@ function copyElementText(elementId, duration = 2000) {
     copyToClipboard(text, button, duration);
 }
 
+// ===== ПОКАЗ ПОПАПА =====
+function showPopup(type, title, message) {
+    // Удаляем старый попап, если есть
+    const oldPopup = document.querySelector('.popup-overlay');
+    if (oldPopup) oldPopup.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay show';
+    
+    const icon = type === 'success' ? '🎉' : '😔';
+    const btnText = type === 'success' ? 'Отлично!' : 'Понял';
+    
+    overlay.innerHTML = `
+        <div class="popup ${type}">
+            <span class="popup-icon">${icon}</span>
+            <div class="popup-title">${title}</div>
+            <div class="popup-message">${message}</div>
+            <button class="popup-btn" onclick="this.closest('.popup-overlay').remove()">${btnText}</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Закрытие по клику вне попапа
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) this.remove();
+    });
+}
+
 // ========================================
 // ЭКСПОРТ ДЛЯ ИСПОЛЬЗОВАНИЯ В ДРУГИХ ФАЙЛАХ
 // ========================================
+window.showPopup = showPopup;
 window.copyToClipboard = copyToClipboard;
 window.copyElementText = copyElementText;
 window.setClippy = setClippy;
@@ -351,3 +381,36 @@ window.initRadioButtons = initRadioButtons;
 window.createTimer = createTimer;
 window.getUrlParam = getUrlParam;
 window.GIFS = GIFS;
+
+
+// ===== ПОКАЗ ПОПАПА =====
+function showPopup(type, title, message) {
+    // Удаляем старый попап, если есть
+    const oldPopup = document.querySelector('.popup-overlay');
+    if (oldPopup) oldPopup.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay show';
+    
+    const icon = type === 'success' ? '🎉' : '😔';
+    const btnText = type === 'success' ? 'Отлично!' : 'Понял';
+    
+    overlay.innerHTML = `
+        <div class="popup ${type}">
+            <span class="popup-icon">${icon}</span>
+            <div class="popup-title">${title}</div>
+            <div class="popup-message">${message}</div>
+            <button class="popup-btn" onclick="this.closest('.popup-overlay').remove()">${btnText}</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Закрытие по клику вне попапа
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) this.remove();
+    });
+}
+
+// Экспортируем
+window.showPopup = showPopup;
