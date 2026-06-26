@@ -104,13 +104,9 @@ sudo systemctl status docent-vpn
 ```
 
 ## Веб-интерфейс
-<p align="center">
 ![Панель-администратора](./screenshots/admin_dashboard.png)
-</p>
 
-<p align="center">
 ![Панель-пользователя](./screenshots/user_dashboard.png)
-</p>
 
 После установки можно использовать веб-интерфейс в вашем браузере, обратившись по Ip вашего сервера.
 
