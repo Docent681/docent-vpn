@@ -233,31 +233,41 @@
 
     <hr class="section-divider">
 
-    <!-- LOGS TABLE (Placeholder) -->
-    <h2 class="section-title">
-        📋 Лог действий пользователей
-        <span class="badge">В разработке</span>
-    </h2>
-    
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Логин</th>
-                    <th>Дата</th>
-                    <th>Действие пользователя</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="4" style="text-align: center; color: rgba(255,255,255,0.3); padding: 30px;">
-                        📝 Логирование действий будет добавлено в ближайшее время
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- LOGS TABLE -->
+<h2 class="section-title">
+    📋 Лог действий пользователей
+    <span class="badge">{{ logs|length if logs else 0 }}</span>
+</h2>
+
+<div class="table-wrapper">
+    {% if logs %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Логин</th>
+                <th>Дата</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><code style="color: rgba(255,255,255,0.4);">#{{ log.id }}</code></td>
+                <td><strong style="color: #fff;">{{ log.username }}</strong></td>
+                <td style="color: rgba(255,255,255,0.6);">{{ log.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td style="color: rgba(255,255,255,0.8);">{{ log.action }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        Записей в логе пока нет
     </div>
+    {% endif %}
+</div>
 
     <hr class="section-divider">
 

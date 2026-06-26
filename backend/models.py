@@ -1,5 +1,44 @@
 from extensions import db
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+
+
+class Log(db.Model):
+    __tablename__ = 'logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=False, nullable=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    action = db.Column(db.String(512), unique=False, nullable=False)
+
+    def set_username(self, username):
+        self.username = username
+
+    def set_date(self, date):
+        self.date = date
+
+    def set_action(self, action):
+        self.action = action
+
+    def get_username(self):
+        return self.username
+
+    def get_date(self):
+        return self.date
+
+    def get_action(self):
+        return self.action
+
+    @staticmethod
+    def create_log(username, action):
+        log = Log()
+        log.set_username(username)
+        log.set_action(action)
+        return log
+
+    def __repr__(self):
+        return f'<Log {self.username} - {self.action}>'
+
 
 class Key(db.Model):
     __tablename__ = 'keys'
