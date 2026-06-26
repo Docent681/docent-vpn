@@ -221,7 +221,7 @@ def login():
             password = request.form.get('password')
             user_type = request.form.get('user_type')
 
-        user = User.query.filter((User.username == username) or (User.email == username)).first()
+        user = User.query.filter((User.username == username) | (User.email == username)).first()
         
         if user is None:
             return {"success": False, "message": "Неверный логин или пароль"}, 400
@@ -229,11 +229,11 @@ def login():
             return {"success": False, "message": "Неверный логин или пароль"}, 400
         elif not user.get_is_confirmed():
             return {"success": False, "message": "Пожалуйста, подтвердите регистрацию по коду из письма"}, 400
-        elif user_type == 'admin_choice' and user.is_admin == False:
+        elif user_type == 'admin_choice' and not user.is_admin:
             return {"success": False, "message": "У вас нет прав администратора"}, 400
 
         session.clear()
-        session['current_user_login'] = user.username
+        session['current_user_login'] = username
 
         if user_type == 'user_choice':
             return {"success": True, "redirect": url_for('user_dashboard')}
