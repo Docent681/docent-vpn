@@ -436,25 +436,31 @@
             </h2>
             
             <form action="{{ url_for('create_new_admin') }}" method="POST" class="admin-form" id="createAdminForm">
-                <div class="form-group">
-                    <label for="admin_username">👤 Логин</label>
-                    <input type="text" id="admin_username" name="username" placeholder="Придумайте логин" required minlength="3" maxlength="30">
-                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="admin_username">👤 Логин</label>
+                        <input type="text" id="admin_username" name="username" placeholder="Придумайте логин" minlength="3" maxlength="30">
+                        <div class="hint">Укажите логин ИЛИ почту</div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="admin_email">📧 Почта</label>
-                    <input type="email" id="admin_email" name="email" placeholder="example@mail.com" required>
+                    <div class="form-group">
+                        <label for="admin_email">📧 Почта</label>
+                        <input type="email" id="admin_email" name="email" placeholder="example@mail.com">
+                        <div class="hint">Укажите логин ИЛИ почту</div>
+                    </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="admin_password">🔑 Пароль</label>
-                        <input type="password" id="admin_password" name="password" placeholder="Пароль" required minlength="8">
+                        <input type="password" id="admin_password" name="password" placeholder="Пароль" minlength="8">
+                        <div class="hint">Обязателен только для новых пользователей</div>
                     </div>
 
                     <div class="form-group">
                         <label for="admin_password_repeat">🔁 Повторите</label>
-                        <input type="password" id="admin_password_repeat" name="password_repeat" placeholder="Повторите пароль" required>
+                        <input type="password" id="admin_password_repeat" name="password_repeat" placeholder="Повторите пароль">
+                        <div class="hint">Обязателен только для новых пользователей</div>
                     </div>
                 </div>
 

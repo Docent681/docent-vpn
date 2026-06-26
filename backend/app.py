@@ -470,33 +470,71 @@ def create_new_admin():
     password = request.form.get('password')
     password_repeat = request.form.get('password_repeat')
 
-    existing_user = User.query.filter(User.username == username).first()
+    # ===== 1. Проверяем: введён логин ИЛИ почта =====
+    if not username and not email:
+        error = "Укажите логин или почту"
+        write_log(current_admin, f"Ошибка: {error}")
+        return redirect(url_for('admin_dashboard', error=error))
+
+    # ===== 2. Ищем существующего пользователя по логину ИЛИ почте =====
+    existing_user = None
+    if username:
+        existing_user = User.query.filter(User.username == username).first()
+    if not existing_user and email:
+        existing_user = User.query.filter(User.email == email).first()
+
+    # ===== 3. Если пользователь уже существует =====
     if existing_user:
-        # Повышаем права существующего пользователя
+        # Проверяем, не админ ли уже
+        if existing_user.is_admin:
+            error = f"Пользователь '{existing_user.username}' уже является администратором"
+            write_log(current_admin, f"Ошибка: {error}")
+            return redirect(url_for('admin_dashboard', error=error))
+        
+        # Обновляем поля, если они переданы
+        if username and not existing_user.username:
+            existing_user.set_username(username)
+        if email and not existing_user.email:
+            existing_user.set_email(email)
+        
+        # Делаем админом (пароль не нужен)
         existing_user.set_is_admin(True)
         db.session.commit()
-        write_log(current_admin, f"Пользователю {username} выданы права администратора")
+        
+        write_log(current_admin, f"Пользователю '{existing_user.username}' выданы права администратора")
         return redirect(url_for('admin_dashboard', error=error))
 
-    # Создаём нового администратора
+    # ===== 4. Создаём нового пользователя =====
+    # Для нового пользователя пароль обязателен
+    if not password or not password_repeat:
+        error = "Для нового пользователя необходимо ввести пароль"
+        write_log(current_admin, f"Ошибка: {error}")
+        return redirect(url_for('admin_dashboard', error=error))
+    
     if password != password_repeat:
-        error = "Пароли не совпали, попробуйте еще раз"
-    elif not password or not password_repeat:
-        error = "При создании нового пользователя с правами администратора необходимо ввести для него пароль"
-    else:
-        user = User()
-        user.set_username(username)
-        user.set_email(email)
-        user.set_password(password)
-        user.set_is_admin(True)
-        user.set_is_confirmed(True)
-        db.session.add(user)
-        db.session.commit()
-        write_log(current_admin, f"Создан новый администратор {username}")
+        error = "Пароли не совпадают"
+        write_log(current_admin, f"Ошибка: {error}")
         return redirect(url_for('admin_dashboard', error=error))
 
-    # Если ошибка валидации
-    write_log(current_admin, f"Ошибка при создании администратора: {error}")
+    # Создаём нового пользователя
+    user = User()
+    
+    # Логин обязателен для нового пользователя
+    if not username:
+        error = "Для нового пользователя необходимо указать логин"
+        write_log(current_admin, f"Ошибка: {error}")
+        return redirect(url_for('admin_dashboard', error=error))
+    
+    user.set_username(username)
+    if email:
+        user.set_email(email)
+    user.set_password(password)
+    user.set_is_admin(True)
+    user.set_is_confirmed(True)
+    
+    db.session.add(user)
+    db.session.commit()
+    write_log(current_admin, f"Создан новый администратор '{username}'")
     return redirect(url_for('admin_dashboard', error=error))
 
 
