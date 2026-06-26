@@ -220,6 +220,7 @@ if command -v psql &>/dev/null; then
 
 
 
+
         SECRET_KEY="$(python3 $PROJECT_DIR/backend/secret_key_gen.py)"
         echo "Для доступа к базе данных был сгенерирован ключ $SECRET_KEY. Ключ записан в envy.conf"
 
