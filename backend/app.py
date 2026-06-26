@@ -138,6 +138,43 @@ def verify():
 
     return render_template('verify.html', error=error)
 
+# ------------------------------------------------------------
+# Повторная отправка кода для регистрации
+# ------------------------------------------------------------
+@app.route('/resend_code', methods=['POST'])
+def resend_code():
+    user_id = session.get('user_id')
+    if not user_id:
+        return {"success": False, "message": "Сессия истекла. Зарегистрируйтесь заново."}, 400
+
+    user = User.query.get(user_id)
+    if not user or user.get_is_confirmed():
+        return {"success": False, "message": "Пользователь не найден или уже подтверждён."}, 400
+
+    code = code_generate()
+    session['code'] = code
+
+    # Выбираем способ отправки в зависимости от настроек
+    try:
+        if Config.IS_MAIL_COOKED == False:
+            # Обычный SMTP
+            msg = EmailMessage(
+                "Повторный код регистрации Docent VPN",
+                f"Ваш новый код подтверждения: {code}",
+                Config.MAIL_USERNAME,
+                [user.email]
+            )
+            msg.send()
+        elif Config.IS_SENDGRID_COOKED == False:
+            # SendGrid
+            if not send_sendgrid(user.email, code):
+                raise Exception("SendGrid вернул ошибку")
+        else:
+            return {"success": False, "message": "Почта недоступна."}, 500
+
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": "Не удалось отправить письмо. Попробуйте позже."}, 500
 
 # ------------------------------------------------------------
 # Выход из системы
