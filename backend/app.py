@@ -65,8 +65,8 @@ def register():
             db.session.commit()
 
             # В зависимости от доступности почты выполняем разные сценарии
-            if Config.IS_MAIL_COOKED:
-                if not Config.IS_SENDGRID_COOKED:
+            if Config.IS_MAIL_COOKED == True:
+                if Config.IS_SENDGRID_COOKED == False:
                     user.set_is_confirmed(False)
                     session['user_id'] = user.get_id()
                     code = code_generate()
