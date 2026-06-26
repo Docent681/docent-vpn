@@ -8,9 +8,9 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 # Функция отправки писем через sendgrid
-def seng_sendgrid(code=""):
+def send_sendgrid(code=""):
     message = Mail(
-        from_email= str(Config.email)
+        from_email= str(Config.email),
         to_emails=str(Config.email),
         subject='Подтверждение регистрации в Docent-VPN',
         html_content=f"<strong>Вам был отправлен код подтверждения регистрации {code}. Если вы не регистрировались в Docent-VPN, проигнорируйте это письмо</strong>")
