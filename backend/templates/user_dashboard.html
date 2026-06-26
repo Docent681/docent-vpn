@@ -5,6 +5,87 @@
     .dashboard-container {
         max-width: 900px;
     }
+
+    .dashboard-container .clippy-gif.error {
+        z-index: 999;
+        position: relative;
+    }
+    
+    .dashboard-container {
+        overflow: visible;
+    }
+
+    .key-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 100%;
+    }
+    
+    .key-truncate {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        font-size: 13px;
+        font-family: 'Courier New', monospace;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 4px 12px;
+        border-radius: 6px;
+        color: #c084fc;
+        display: inline-block;
+        max-width: 100%;
+    }
+    
+    .btn-copy {
+        background: rgba(129, 140, 248, 0.15);
+        border: 1px solid rgba(129, 140, 248, 0.2);
+        color: #a78bfa;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+    
+    .btn-copy:hover {
+        background: rgba(129, 140, 248, 0.25);
+        transform: scale(1.05);
+    }
+    
+    .btn-copy.copied {
+        background: rgba(52, 211, 153, 0.2);
+        border-color: rgba(52, 211, 153, 0.3);
+        color: #34d399;
+    }
+    
+    .btn-copy .copy-tooltip {
+        display: none;
+        position: absolute;
+        background: rgba(0,0,0,0.8);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        margin-top: -30px;
+        margin-left: -10px;
+    }
+    
+    /* Адаптив для мобильных */
+    @media (max-width: 600px) {
+        .key-truncate {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+        .btn-copy {
+            font-size: 14px;
+            padding: 3px 8px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -55,7 +136,7 @@
         <span id="successText">Успешно</span>
     </div>
 
-    <!-- KEYS SECTION -->
+        <!-- KEYS SECTION -->
     <div class="keys-section">
         <h2 class="section-title">
             🔑 Мои ключи
@@ -67,16 +148,23 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Имя ключа</th>
-                        <th>Ключ</th>
-                        <th style="text-align: right;">Действие</th>
+                        <th style="width: 20%;">Имя ключа</th>
+                        <th style="width: 55%;">Ключ (Access URL)</th>
+                        <th style="width: 25%; text-align: right;">Действие</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for key in keys %}
                     <tr>
                         <td><strong style="color: #a78bfa;">{{ key.keyidentity }}</strong></td>
-                        <td><span class="key-name">{{ key.get_keyname() }}</span></td>
+                        <td>
+                            <div class="key-cell">
+                                <span class="key-name key-truncate" id="key-{{ key.id }}">{{ key.get_keyname() }}</span>
+                                <button class="btn-copy" onclick="copyKey('key-{{ key.id }}')" title="Скопировать ключ">
+                                    📋
+                                </button>
+                            </div>
+                        </td>
                         <td style="text-align: right;">
                             <form action="{{ url_for('delete_key') }}" method="POST" class="delete-key-form">
                                 <input type="hidden" name="key_id" value="{{ key.id }}">
@@ -410,5 +498,41 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showDashboardError = showError;
     window.showDashboardSuccess = showSuccess;
 });
+
+function copyKey(elementId) {
+    const keyElement = document.getElementById(elementId);
+    const keyText = keyElement.textContent.trim();
+    
+    navigator.clipboard.writeText(keyText).then(() => {
+        const cell = keyElement.closest('.key-cell');
+        const btn = cell.querySelector('.btn-copy');
+        const originalText = btn.textContent;
+        btn.textContent = '✅';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(() => {
+        // Fallback
+        const textArea = document.createElement('textarea');
+        textArea.value = keyText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const cell = keyElement.closest('.key-cell');
+        const btn = cell.querySelector('.btn-copy');
+        const originalText = btn.textContent;
+        btn.textContent = '✅';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+
 </script>
 {% endblock %}
