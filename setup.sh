@@ -209,8 +209,14 @@ if command -v psql &>/dev/null; then
 
         echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
         read -r -p " Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
-        if [[ -z "$IS_SENDGRID_COOKED" ]]; then
+        if [[ -n "$IS_SENDGRID_COOKED" ]]; then
             read -r -p "Введите ваш sendgrid API: " SENDGRID_API
+            if [[ -z "$SENDGRID_API" ]]; then
+                echo "Вы не ввели ваш sendgrid API. Позже можно будет добавить ваш API в envy.conf"
+            else
+                yes
+            fi
+        else
 
 
 
