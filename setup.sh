@@ -37,7 +37,7 @@ fi
 
 # Настройка ufw, если он присутствует
 if command -v ufw &>/dev/null; then
-    echo "В системе обнаружен UFW. Необходимо открыть порты для Outline."
+    echo "В системе обнаружен UFW. Необходимо открыть порты для Outline и веб-интерфейса."
     read -r -p "Настроить порты автоматически? [Y/n]: " AUTO_FIREWALL_CONF
 
     while [[ ! "$AUTO_FIREWALL_CONF" =~ ^([yYnN]?)$ ]]; do
@@ -52,11 +52,26 @@ if command -v ufw &>/dev/null; then
                 $cmd || echo "Предупреждение: команда '$cmd' завершилась с ошибкой"
             fi
         done
-        echo "Порты UFW настроены."
+        echo "Порты UFW для Outline настроены."
+    # Другие необходимые порты ufw
+    ufw allow 22 &>> "$LOGFILE"
+    ufw allow 80 &>> "$LOGFILE"
+    ufw allow 443 &>> "$LOGFILE"
+
+    if [[ -f /opt/outline/access.txt ]]; then
+        KEYPORT=$( curl -k -X GET "https://127.0.0.1:55175/9cFR79qGurakTyvBGk8KQQ/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" )
+        ufw allow "$KEYPORT"
+    else
+        echo "Outline не установлен, не получается открыть порт для ключей Outline, сделайте это самостоятельно"
+    fi
+
+    echo "Включаем Фаерволл"
     else
         echo "Настройка UFW пропущена. Не забудьте открыть порты вручную."
     fi
 fi
+
+
 
 #Установка веб-сервера nginx
 echo "Проверяем наличие nginx..."
