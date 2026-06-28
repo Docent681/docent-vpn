@@ -36,7 +36,7 @@ usermod -aG sudo имя_пользователя
 Если вы используете **debian based** дистрибутив, то установить все требуемые программы можно через пакетный менеджер apt:
 
 ``` 
-sudo apt update & sudo apt install git python3 python3-venv python3-pip
+sudo apt update && sudo apt install git python3 python3-venv python3-pip
 ```
 
 
