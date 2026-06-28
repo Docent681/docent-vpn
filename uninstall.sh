@@ -84,30 +84,6 @@ else
     fi
 fi
 
-#Деинсталляция базы данных PostgreSQL
-if ! command -v psql &>/dev/null; then
-    echo "postgresql не обнаружен в системе."
-else
-    echo "postgresql обнаруженв системе."
-     read -r -p "Удалить postgresql? [Y/n]: " DELETE_SQL
-    # Проверка ввода: Y, N или пусто (Enter)
-    while [[ ! "$DELETE_SQL" =~ ^([yYnN]?)$ ]]; do
-        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_SQL
-    done
-
-    if [[ -z "$DELETE_SQL" || "$DELETE_SQL" =~ ^[yY]$ ]]; then
-        if command -v apt &>/dev/null; then
-            echo "Удаляем PostgreSql"
-            apt purge postgresql postgresql-contrib
-        else
-            echo "Не удалось автоматически удалить postgresql: пакетный менеджер apt не найден."
-            echo "Пожалуйста, удалить postgresql вручную."
-        fi
-    else
-        echo "Деинсталляция postgresql пропущена."
-    fi
-fi
-
 # Деинсталляция конкретно базы данных docent-vpn
 read -r -p "Удалить базу данных веб-интерфейса? [Y/n]: " DELETE_DOCENT_DB
 # Проверка ввода: Y, N или пусто (Enter)
@@ -128,6 +104,29 @@ else
     echo "Деинсталляция базы данных docent-vpn пропущена."
 fi
 
+#Деинсталляция базы данных PostgreSQL
+if ! command -v psql &>/dev/null; then
+    echo "postgresql не обнаружен в системе."
+else
+    echo "postgresql обнаруженв системе."
+     read -r -p "Удалить postgresql? [Y/n]: " DELETE_SQL
+    # Проверка ввода: Y, N или пусто (Enter)
+    while [[ ! "$DELETE_SQL" =~ ^([yYnN]?)$ ]]; do
+        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_SQL
+    done
+
+    if [[ -z "$DELETE_SQL" || "$DELETE_SQL" =~ ^[yY]$ ]]; then
+        if command -v apt &>/dev/null; then
+            echo "Удаляем PostgreSql"
+            apt purge postgresql-* postgresql-contrib
+        else
+            echo "Не удалось автоматически удалить postgresql: пакетный менеджер apt не найден."
+            echo "Пожалуйста, удалить postgresql вручную."
+        fi
+    else
+        echo "Деинсталляция postgresql пропущена."
+    fi
+fi
 
 # Удаление службы docent-vpn в systemd
 if [[ -f /etc/systemd/system/docent-vpn.service ]]; then
