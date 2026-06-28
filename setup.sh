@@ -67,7 +67,7 @@ if command -v ufw &>/dev/null; then
         API_BASE_UFW="https://127.0.0.1:${PORT_UFW}"
         SECRET_PATH_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|https?://[^/]+/||')
 
-        KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" &>> "$LOGFILE" )
+        KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys")
 
         if [[ -z "$KEYPORT" ]]; then
             echo "Не удалось открыть порт для ключей"
@@ -311,7 +311,7 @@ if command -v psql &>/dev/null; then
 
         # Непосредственное добавление перенесено в блок после установки .venv окружения,
         # так как используется .py скрипт
-        echo "Был создан аккаунт администратора веб интерфейса"
+        echo "Аккаунт администратора будет создан после настройки .venv окружения"
         echo "Логин: $WEB_ADMIN"
         echo "Почта: $WEB_ADMIN_EMAIL"
         echo "Пароль: $WEB_ADMIN_PASSWORD"
@@ -372,9 +372,6 @@ else
     echo "Файл requirements.txt не найден. Пропускаем установку."
 fi
 
-export PROJECT_DIR
-"$PROJECT_DIR"/add_admin.sh "$SQL_USER" "$SQL_DB_NAME" "$WEB_ADMIN" "$WEB_ADMIN_EMAIL" "$WEB_ADMIN_PASSWORD" &>> "$LOGFILE"
-
 # Инициализация и выполнение миграций Flask
 echo "Настраиваем базу данных (Flask-Migrate)..."
 if [[ -d "$PROJECT_DIR/backend/migrations" ]]; then
@@ -403,6 +400,26 @@ if [[ $? -ne 0 ]]; then
     echo "Ошибка применения миграций. Смотрите лог."
     exit 1
 fi
+
+# Создание первого администратора веб-интерфейса
+if [[ -n "$WEB_ADMIN" && -n "$WEB_ADMIN_EMAIL" && -n "$WEB_ADMIN_PASSWORD" ]]; then
+    echo "Создаём учётную запись администратора $WEB_ADMIN ..."
+    PASSWORD_HASH=$(echo "$WEB_ADMIN_PASSWORD" | sudo -u "$SUDO_USER" "$PROJECT_DIR/backend/.venv/bin/python" "$PROJECT_DIR/backend/password_to_hash.py")
+
+    sudo -u "$SUDO_USER" PGPASSWORD="$SQL_USER_PASSWORD" psql \
+        -U "$SQL_USER" \
+        -d "$SQL_DB_NAME" \
+        -c "INSERT INTO users VALUES (0, '$WEB_ADMIN', '$WEB_ADMIN_EMAIL', '$PASSWORD_HASH', true, true);"
+
+    if [[ $? -eq 0 ]]; then
+        echo "Администратор $WEB_ADMIN успешно зарегистрирован."
+    else
+        echo "Ошибка при создании администратора (возможно, таблица users не найдена)."
+    fi
+else
+    echo "Не все данные администратора введены, пропускаем создание учётной записи."
+fi
+
 
 echo "Конфигурация Python-окружения завершена."
 
@@ -451,6 +468,7 @@ if [[ -f /opt/outline/access.txt ]]; then
         echo "IP-адрес сервера: $API_HOST"
         if [[ -n "$API_PORT" ]]; then
             echo "Служебный порт (API): $API_PORT"
+            echo "Порт для ключей Outline: $KEYPORT"
         fi
     fi
 else
