@@ -395,8 +395,8 @@ if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
 ' "$PROJECT_DIR/docent-vpn.service" > "$PROJECT_DIR/docent-vpn.service.tmp" && mv "$PROJECT_DIR/docent-vpn.service.tmp" "$PROJECT_DIR/docent-vpn.service"
     cp "$PROJECT_DIR/docent-vpn.service" /etc/systemd/system/docent-vpn.service
 
-    systemctl daemon-reload
-    systemctl enable --now docent-vpn
+    systemctl daemon-reload &>> "$LOGFILE"
+    systemctl enable --now docent-vpn &>> "$LOGFILE"
 
     echo "автозапуск сервера был успешно настроен"
 else
