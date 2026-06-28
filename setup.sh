@@ -60,8 +60,11 @@ if command -v ufw &>/dev/null; then
     ufw allow 443 &>> "$LOGFILE"
 
     if [[ -f /opt/outline/access.txt ]]; then
-        API_URL_FULL_UFW=$(sed -n '2p' /opt/outline/access.txt)
-        API_BASE_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|^(https?://[^/]+)/.*|\1|')
+        API_URL_FULL_UFW=$(sed -n '2p' /opt/outline/access.txt | sed 's/^apiUrl:[[:space:]]*//')
+
+        HOST_PORT_UFW=$(echo "$API_URL_FULL_UFW" | awk -F/ '{print $3}')
+        PORT_UFW=$(echo "$HOST_PORT_UFW" | cut -d: -f2)
+        API_BASE_UFW="https://127.0.0.1:${PORT_UFW}"
         SECRET_PATH_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|https?://[^/]+/||')
 
         KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" ) &>> "$LOGFILE"
@@ -219,7 +222,7 @@ if command -v psql &>/dev/null; then
 
         echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
         read -r -p "Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
-        if [[ -z "$IS_SENDGRID_COOKED" ]]; then
+        if [[ -n "$IS_SENDGRID_COOKED" ]]; then
             export IS_SENDGRID_COOKED="0"
             echo "Вы решили использовать sendgrid"
             read -r -p "Введите ваш sendgrid API: " SENDGRID_API
@@ -269,9 +272,13 @@ if command -v psql &>/dev/null; then
 
         # Добавляем api_url и outline_secret_path из /opt/outline/access.txt
         if [[ -f /opt/outline/access.txt ]]; then
-            API_URL_FULL=$(sed -n '2p' /opt/outline/access.txt)
-            API_BASE=$(echo "$API_URL_FULL" | sed -E 's|^(https?://[^/]+)/.*|\1|')
+            API_URL_FULL=$(sed -n '2p' /opt/outline/access.txt | sed 's/^apiUrl:[[:space:]]*//')
+
+            HOST_PORT=$(echo "$API_URL_FULL" | awk -F/ '{print $3}')
+            PORT=$(echo "$HOST_PORT" | cut -d: -f2)
+            API_BASE="https://127.0.0.1:${PORT}"
             SECRET_PATH=$(echo "$API_URL_FULL" | sed -E 's|https?://[^/]+/||')
+
             echo "api_url $API_BASE" >> "$PROJECT_DIR/envy.conf"
             echo "outline_secret_path $SECRET_PATH" >> "$PROJECT_DIR/envy.conf"
         else

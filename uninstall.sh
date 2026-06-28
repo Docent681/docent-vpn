@@ -28,6 +28,7 @@ if [[ -f /opt/outline/access.txt ]]; then
         else
             docker stop "$OUTLINE_ID"
             docker rm "$OUTLINE_ID"
+	    rm -rf /opt/outline
             echo "Outline был удален из системы"
         fi
     else
@@ -107,26 +108,24 @@ else
     fi
 fi
 
-# Деинсталляция конкретно базы данных docent-vpn, если пользователь решил оставить PostgreSql
-if [[ "$DELETE_SQL" =~ ^[nN]$ ]]; then
-    read -r -p "Установить базу данных веб-интерфейса? [Y/n]: " DELETE_DOCENT_DB
-    # Проверка ввода: Y, N или пусто (Enter)
-    while [[ ! "$DELETE_DOCENT_DB" =~ ^([yYnN]?)$ ]]; do
-        read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_DOCENT_DB
-    done
+# Деинсталляция конкретно базы данных docent-vpn
+read -r -p "Удалить базу данных веб-интерфейса? [Y/n]: " DELETE_DOCENT_DB
+# Проверка ввода: Y, N или пусто (Enter)
+while [[ ! "$DELETE_DOCENT_DB" =~ ^([yYnN]?)$ ]]; do
+    read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_DOCENT_DB
+done
 
-    if [[ -z "$DELETE_DOCENT_DB" || "$DELETE_DOCENT_DB" =~ ^[yY]$ ]]; then
-        echo "Удаляем Базу данных docent-vpn"
-        DB_NAME=$(sed -n '1p' "$PROJECT_DIR"/envy.conf | cut -d' ' -f1 )
-        if [[ -n "$DB_NAME" ]]; then
-            sudo -u postgres psql -c "DROP DATABASE $DB_NAME;"
-            echo "База данных docent-vpn была удалена"
-        else
-            echo "Не удалось определить имя базы данных, деинсталляция пропущена"
-        fi
+if [[ -z "$DELETE_DOCENT_DB" || "$DELETE_DOCENT_DB" =~ ^[yY]$ ]]; then
+    echo "Удаляем Базу данных docent-vpn"
+    DB_NAME=$(sed -n '1p' "$PROJECT_DIR"/envy.conf | cut -d' ' -f1 )
+    if [[ -n "$DB_NAME" ]]; then
+        sudo -u postgres psql -c "DROP DATABASE $DB_NAME;"
+        echo "База данных docent-vpn была удалена"
     else
-        echo "Деинсталляция базы данных docent-vpn пропущена."
+        echo "Не удалось определить имя базы данных, деинсталляция пропущена"
     fi
+else
+    echo "Деинсталляция базы данных docent-vpn пропущена."
 fi
 
 
