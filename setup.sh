@@ -172,7 +172,7 @@ else
     if [[ -z "$INSTALL_SQL" || "$INSTALL_SQL" =~ ^[yY]$ ]]; then
         if command -v apt &>/dev/null; then
             echo "Обновляем список пакетов и устанавливаем postgresql..."
-	    { apt update -y && apt install -y postgresql postgresql-contrib; } &>> "$LOGFILE"
+	        { apt update -y && apt install -y postgresql postgresql-contrib; } &>> "$LOGFILE"
             if command -v psql &>/dev/null; then
                 echo "postgresql успешно установлен."
             else
