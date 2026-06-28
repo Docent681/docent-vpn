@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail  # выход при ошибке, неинициализированные переменные, ошибки пайпов
 
 # Проверка, что скрипт запущен через sudo от обычного пользователя
 if [[ -z "${SUDO_USER:-}" ]]; then
@@ -51,7 +50,7 @@ if command -v ufw &>/dev/null; then
         grep 'ufw allow' "$LOGFILE" | sed -e 's/^[[:space:]]*sudo //' -e 's/[[:space:]]*$//' | while read -r cmd; do
             if [[ -n "$cmd" ]]; then
                 echo "Выполняю: $cmd"
-                $cmd || echo "Предупреждение: команда '$cmd' завершилась с ошибкой"
+                $cmd &>> "$LOGFILE" || echo "Предупреждение: команда '$cmd' завершилась с ошибкой"
             fi
         done
         echo "Порты UFW для Outline настроены."
@@ -61,8 +60,17 @@ if command -v ufw &>/dev/null; then
     ufw allow 443 &>> "$LOGFILE"
 
     if [[ -f /opt/outline/access.txt ]]; then
-        KEYPORT=$( curl -k -X GET "https://127.0.0.1:55175/9cFR79qGurakTyvBGk8KQQ/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" )
-        ufw allow "$KEYPORT"
+        API_URL_FULL_UFW=$(sed -n '2p' /opt/outline/access.txt)
+        API_BASE_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|^(https?://[^/]+)/.*|\1|')
+        SECRET_PATH_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|https?://[^/]+/||')
+
+        KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" ) &>> "$LOGFILE"
+
+        if [[ -z "$KEYPORT" ]]; then
+            echo "Не удалось открыть порт для ключей"
+        else
+            ufw allow "$KEYPORT" &>> "$LOGFILE"
+        fi
     else
         echo "Outline не установлен, не получается открыть порт для ключей Outline, сделайте это самостоятельно"
     fi
@@ -210,7 +218,7 @@ if command -v psql &>/dev/null; then
         fi
 
         echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
-        read -r -p " Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
+        read -r -p "Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
         if [[ -n "$IS_SENDGRID_COOKED" ]]; then
             export IS_SENDGRID_COOKED="0"
             echo "Вы решили использовать sendgrid"
@@ -233,18 +241,20 @@ if command -v psql &>/dev/null; then
         echo "Для доступа к базе данных был сгенерирован ключ $SECRET_KEY. Ключ записан в envy.conf"
 
         #Открываем порты для почты
-        ufw allow out 587/tcp
-        ufw allow out 465/tcp
+        ufw allow out 587/tcp &>> "$LOGFILE"
+        ufw allow out 465/tcp &>> "$LOGFILE"
 
         echo "Проверяем доступность SMTP-портов..."
         if timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/587" 2>/dev/null; then
-            IS_MAIL_COOKED="False"
+            IS_MAIL_COOKED="0"
             echo "Порт 587 доступен. Двухэтапная аутентификация будет работать."
+            echo "Если вы не хотите использовать почту, поменяйте значение is_mail_cooked в envy.conf на 1"
         elif timeout 3 bash -c "echo >/dev/tcp/smtp.gmail.com/465" 2>/dev/null; then
-            IS_MAIL_COOKED="False"
+            IS_MAIL_COOKED="0"
             echo "Порт 465 доступен. Будет использоваться SSL (порт 465)."
+            echo "Если вы не хотите использовать почту, поменяйте значение is_mail_cooked в envy.conf на 1"
         else
-            IS_MAIL_COOKED="True"
+            IS_MAIL_COOKED="1"
             echo "SMTP-порты недоступны (вероятна блокировка провайдера). Двухэтапная аутентификация отключена."
         fi
 
@@ -275,11 +285,11 @@ if command -v psql &>/dev/null; then
         echo "sendgrid_api $SENDGRID_API" >> "$PROJECT_DIR/envy.conf"
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
-        sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';"
-        sudo -u postgres psql -c "CREATE DATABASE $SQL_DB_NAME;"
-	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";"
-	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";"
-	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";"
+        sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';" &>> "$LOGFILE"
+        sudo -u postgres psql -c "CREATE DATABASE $SQL_DB_NAME;" &>> "$LOGFILE"
+	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";" &>> "$LOGFILE"
+	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";" &>> "$LOGFILE"
+	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";" &>> "$LOGFILE"
 
         echo "Конфигурация PostgreSQL была завершена"
     fi
@@ -397,6 +407,7 @@ fi
 #Вывод итоговой информации
 echo "=============================="
 echo "Установка завершена."
+echo "При необходимости не забудьте добавить недостающие данные в envy.conf"
 echo "Информация о сервере"
 
 if [[ -f /opt/outline/access.txt ]]; then

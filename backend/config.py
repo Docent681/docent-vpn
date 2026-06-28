@@ -42,7 +42,7 @@ class Config:
     MAIL_USERNAME = email
     MAIL_PASSWORD = email_password
     MAIL_DEFAULT_SENDER = ('Docent VPN', email)
-    IS_MAIL_COOKED = bool(int(_env.get('is_mail_cooked', 1)))
+    IS_MAIL_COOKED = bool((int(_env.get('is_mail_cooked', 1))))
     API_URL = _env.get('api_url', None)
     OUTLINE_SECRET_PATH = _env.get('outline_secret_path', None)
     IS_SENDGRID_COOKED = bool(int(_env.get('is_sendgrid_cooked', 1)))
