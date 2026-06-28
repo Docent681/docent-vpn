@@ -17,7 +17,7 @@ LOGFILE="$PROJECT_DIR/installation.log"
 chown "$SUDO_USER":"$SUDO_USER" "$LOGFILE" "$PROJECT_DIR"
 
 # Сброс лог-файла перед установкой
-true > "$LOGFILE"
+# true > "$LOGFILE"
 chown "$SUDO_USER":"$SUDO_USER" "$LOGFILE"
 
 if [[ -f /opt/outline/access.txt ]]; then
@@ -27,6 +27,8 @@ else
 
     echo "ЛОГ УСТАНОВКИ OUTLINE VPN" &>> "$LOGFILE"
     yes | bash -c "$(wget -qO- https://raw.githubusercontent.com/OutlineFoundation/outline-apps/master/server_manager/install_scripts/install_server.sh)" &>> "$LOGFILE"
+
+    sleep 3
 
     if [[ -f /opt/outline/access.txt ]]; then
         echo "Outline VPN успешно установлен."
