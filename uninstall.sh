@@ -28,7 +28,6 @@ if [[ -f /opt/outline/access.txt ]]; then
         else
             docker stop "$OUTLINE_ID"
             docker rm "$OUTLINE_ID"
-            docker rmi shadowbox watchtower
             echo "Outline был удален из системы"
         fi
     else
@@ -154,11 +153,11 @@ else
     echo "служба docent-vpn в systemd не найдена, пропускаем деинсталляцию"
 fi
 
-# удаление рабочего каталога docent-vpn
+# Удаление рабочего каталога docent-vpn
 if [[ -d "$PROJECT_DIR/" ]]; then
     echo "Рабочий каталог docent-vpn обнаружен"
 
-     read -r -p "Удалить docent-vpn? [Y/n]: " DELETE_MAIN
+    read -r -p "Удалить docent-vpn? [Y/n]: " DELETE_MAIN
     # Проверка ввода: Y, N или пусто (Enter)
     while [[ ! "$DELETE_MAIN" =~ ^([yYnN]?)$ ]]; do
         read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_MAIN
@@ -174,6 +173,25 @@ if [[ -d "$PROJECT_DIR/" ]]; then
 else
     echo "Рабочий каталог docent-vpn не найден, пропускаем деинсталляцию"
 fi
+
+# Очистка кэша и ненужных зависимостей apt
+read -r -p "очистить кэш и удалить ненужные зависимости apt? [Y/n]: " DELETE_CACHE
+# Проверка ввода: Y, N или пусто (Enter)
+while [[ ! "$DELETE_CACHE" =~ ^([yYnN]?)$ ]]; do
+    read -r -p "Пожалуйста, введите Y или N (или просто Enter для 'да'): " DELETE_CACHE
+done
+if [[ -z "$DELETE_CACHE" || "$DELETE_CACHE" =~ ^[yY]$ ]]; then
+    if command -v apt &>/dev/null; then
+        apt autoremove
+        apt clean
+        echo "Кэш и зависимости apt успешно удалены"
+    else
+        echo "apt не найден в системе, пропускаем очистку"
+    fi
+else
+    echo "Очистка кэша и ненужных зависимостей apt пропущена"
+fi
+
 
 echo "=============================="
 echo "Деинсталляция docent-vpn завершена"

@@ -103,6 +103,12 @@ sudo systemctl status docent-vpn
 ~/docent-vpn/add_admin.sh имя_пользователя имя_бд логин_нового_админа почта_нового_админа пароль_админа
 ```
 
+Если вы захотите удалить docent-vpn со своего сервера, воспользуйтесь скриптом деинсталляции:
+
+``` 
+sudo ~/docent-vpn/uninstall.sh
+```
+
 ## Веб-интерфейс
 ![Панель-администратора](./screenshots/admin_dashboard.png)
 
