@@ -117,7 +117,7 @@ done
 
 if [[ -z "$DELETE_DOCENT_DB" || "$DELETE_DOCENT_DB" =~ ^[yY]$ ]]; then
     echo "Удаляем Базу данных docent-vpn"
-    DB_NAME=$(sed -n '1p' "$PROJECT_DIR"/envy.conf | cut -d' ' -f1 )
+    DB_NAME=$(sed -n '1p' "$PROJECT_DIR"/envy.conf | cut -d' ' -f2 )
     if [[ -n "$DB_NAME" ]]; then
         sudo -u postgres psql -c "DROP DATABASE $DB_NAME;"
         echo "База данных docent-vpn была удалена"
