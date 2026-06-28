@@ -67,7 +67,7 @@ if command -v ufw &>/dev/null; then
         API_BASE_UFW="https://127.0.0.1:${PORT_UFW}"
         SECRET_PATH_UFW=$(echo "$API_URL_FULL_UFW" | sed -E 's|https?://[^/]+/||')
 
-        KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" ) &>> "$LOGFILE"
+        KEYPORT=$( curl -k -X GET "$API_BASE_UFW/$SECRET_PATH_UFW/server"   -H "Content-Type: application/json" | jq ".portForNewAccessKeys" &>> "$LOGFILE" )
 
         if [[ -z "$KEYPORT" ]]; then
             echo "Не удалось открыть порт для ключей"
@@ -308,7 +308,9 @@ if command -v psql &>/dev/null; then
             WEB_ADMIN_PASSWORD="$SQL_USER_PASSWORD"
         fi
 
-        "$PROJECT_DIR"/add_admin.sh "$SQL_USER" "$SQL_DB_NAME" "$WEB_ADMIN" "$WEB_ADMIN_EMAIL" "$WEB_ADMIN_PASSWORD"
+
+        # Непосредственное добавление перенесено в блок после установки .venv окружения,
+        # так как используется .py скрипт
         echo "Был создан аккаунт администратора веб интерфейса"
         echo "Логин: $WEB_ADMIN"
         echo "Почта: $WEB_ADMIN_EMAIL"
@@ -369,6 +371,9 @@ if [[ -f "$PROJECT_DIR/backend/requirements.txt" ]]; then
 else
     echo "Файл requirements.txt не найден. Пропускаем установку."
 fi
+
+export PROJECT_DIR
+"$PROJECT_DIR"/add_admin.sh "$SQL_USER" "$SQL_DB_NAME" "$WEB_ADMIN" "$WEB_ADMIN_EMAIL" "$WEB_ADMIN_PASSWORD" &>> "$LOGFILE"
 
 # Инициализация и выполнение миграций Flask
 echo "Настраиваем базу данных (Flask-Migrate)..."
