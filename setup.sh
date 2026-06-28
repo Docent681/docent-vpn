@@ -219,7 +219,7 @@ if command -v psql &>/dev/null; then
 
         echo "Веб-интерфейс предусматривает использование сервиса Sendgrid для отправки писем."
         read -r -p "Введите что угодно, если хотите его использовать, или просто нажмите enter, чтобы пропустить: " IS_SENDGRID_COOKED
-        if [[ -n "$IS_SENDGRID_COOKED" ]]; then
+        if [[ -z "$IS_SENDGRID_COOKED" ]]; then
             export IS_SENDGRID_COOKED="0"
             echo "Вы решили использовать sendgrid"
             read -r -p "Введите ваш sendgrid API: " SENDGRID_API
@@ -233,9 +233,6 @@ if command -v psql &>/dev/null; then
             SENDGRID_API=""
             echo "Вы решили не использовать sendgrid"
         fi
-
-
-
 
         SECRET_KEY="$(python3 $PROJECT_DIR/backend/secret_key_gen.py)"
         echo "Для доступа к базе данных был сгенерирован ключ $SECRET_KEY. Ключ записан в envy.conf"
@@ -290,6 +287,25 @@ if command -v psql &>/dev/null; then
 	    sudo -u postgres psql -c "ALTER DATABASE \"$SQL_DB_NAME\" OWNER TO \"$SQL_USER\";" &>> "$LOGFILE"
 	    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$SQL_DB_NAME\" TO \"$SQL_USER\";" &>> "$LOGFILE"
 	    sudo -u postgres psql -d "$SQL_DB_NAME" -c "GRANT ALL ON SCHEMA public TO \"$SQL_USER\";" &>> "$LOGFILE"
+
+        read -r -p "Введите логин администратора веб-интерфейса (по умолчанию пользователь БД): " WEB_ADMIN
+        if [[ -z "$WEB_ADMIN" ]]; then
+            WEB_ADMIN="$SQL_USER"
+        fi
+        read -r -p "Введите почту администратора веб-интерфейса (по умолчанию <пользователь>@gmail.com ): " WEB_ADMIN_EMAIL
+        if [[ -z "$WEB_ADMIN_EMAIl" ]]; then
+            WEB_ADMIN_EMAIL="$WEB_ADMIN@gmail.com"
+        fi
+        read -r -p "Введите пароль администратора веб-интерфейса (по умолчанию пароль пользователя БД): " WEB_ADMIN_PASSWORD
+        if [[ -z "$WEB_ADMIN_PASSWORD" ]]; then
+            WEB_ADMIN_PASSWORD="$SQL_USER_PASSWORD"
+        fi
+
+        "$PROJECT_DIR"/add_admin.sh "$SQL_USER" "$SQL_DB_NAME" "$WEB_ADMIN" "$WEB_ADMIN_EMAIL" "$WEB_ADMIN_PASSWORD"
+        echo "Был создан аккаунт администратора веб интерфейса"
+        echo "Логин: $WEB_ADMIN"
+        echo "Почта: $WEB_ADMIN_EMAIL"
+        echo "Пароль: $WEB_ADMIN_PASSWORD"
 
         echo "Конфигурация PostgreSQL была завершена"
     fi
