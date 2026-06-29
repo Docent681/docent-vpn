@@ -6,63 +6,126 @@
         max-width: 900px;
     }
 
-.key-cell {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    max-width: 100%;
-}
+    /* ===== КЛЮЧИ В НЕСКОЛЬКО СТРОК ===== */
+    .key-cell {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        max-width: 100%;
+    }
 
-.key-multiline {
-    flex: 1;
-    word-break: break-all;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-    background: rgba(255, 255, 255, 0.06);
-    padding: 6px 12px;
-    border-radius: 6px;
-    color: #c084fc;
-    line-height: 1.6;
-    min-width: 0;
-}
-
-.btn-copy {
-    background: rgba(129, 140, 248, 0.15);
-    border: 1px solid rgba(129, 140, 248, 0.2);
-    color: #a78bfa;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-    line-height: 1;
-    margin-top: 2px;
-}
-
-.btn-copy:hover {
-    background: rgba(129, 140, 248, 0.25);
-    transform: scale(1.05);
-}
-
-.btn-copy.copied {
-    background: rgba(52, 211, 153, 0.2);
-    border-color: rgba(52, 211, 153, 0.3);
-    color: #34d399;
-}
-
-@media (max-width: 600px) {
     .key-multiline {
-        font-size: 10px;
-        padding: 4px 8px;
+        flex: 1;
+        word-break: break-all;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: #c084fc;
+        line-height: 1.6;
+        min-width: 0;
     }
+
     .btn-copy {
-        font-size: 14px;
-        padding: 3px 8px;
+        background: rgba(129, 140, 248, 0.15);
+        border: 1px solid rgba(129, 140, 248, 0.2);
+        color: #a78bfa;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        line-height: 1;
+        margin-top: 2px;
     }
-}
 
+    .btn-copy:hover {
+        background: rgba(129, 140, 248, 0.25);
+        transform: scale(1.05);
+    }
 
+    .btn-copy.copied {
+        background: rgba(52, 211, 153, 0.2);
+        border-color: rgba(52, 211, 153, 0.3);
+        color: #34d399;
+    }
+
+    @media (max-width: 600px) {
+        .key-multiline {
+            font-size: 10px;
+            padding: 4px 8px;
+        }
+        .btn-copy {
+            font-size: 14px;
+            padding: 3px 8px;
+        }
+    }
+
+    /* ========================================
+       ТАБЛИЦА С ОГРАНИЧЕННОЙ ВЫСОТОЙ
+       ======================================== */
+    .table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Стилизация скроллбара для WebKit */
+    .table-wrapper::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(129, 140, 248, 0.3);
+        border-radius: 4px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: rgba(129, 140, 248, 0.5);
+    }
+
+    /* Для Firefox */
+    .table-wrapper {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(129, 140, 248, 0.3) rgba(255, 255, 255, 0.05);
+    }
+
+    /* Фиксированный заголовок */
+    .table-wrapper .table {
+        margin-bottom: 0;
+    }
+
+    .table-wrapper .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .table-wrapper .table thead th {
+        background: #2a2554;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table-wrapper .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-wrapper .empty-state {
+        padding: 30px 20px;
+    }
 </style>
 {% endblock %}
 
@@ -121,7 +184,7 @@
             🔑 Мои ключи
             <span class="badge">{{ keys|length if keys else 0 }}</span>
         </h2>
-        
+
         <div class="table-wrapper">
             {% if keys %}
             <table class="table">
@@ -339,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
             errors.push('Укажите количество ключей (минимум 1)');
             keyAmount.classList.add('error');
         } else if (amount > 100) {
-            errors.push('Максимум 10 ключей за запрос');
+            errors.push('Максимум 100 ключей за запрос');
             keyAmount.classList.add('error');
         } else {
             keyAmount.classList.remove('error');
@@ -370,9 +433,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     keyAmount.addEventListener('input', function() {
         const val = parseInt(this.value);
-        if (val && val >= 1 && val <= 10) {
+        if (val && val >= 1 && val <= 100) {
             this.classList.remove('error');
-        } else if (val > 10) {
+        } else if (val > 100) {
             this.classList.add('error');
         }
         errorMsg.classList.remove('show');
