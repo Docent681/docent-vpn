@@ -1,3 +1,5 @@
+from random import randint
+
 from flask import Flask, redirect, render_template, url_for, request, session
 from flask_mailman import EmailMessage
 from services import code_generate, create_key, delete_user_key, send_sendgrid
@@ -336,12 +338,13 @@ def admin_dashboard():
     if admin_user is None or not admin_user.is_admin:
         return redirect(url_for('login', error="Недостаточно прав"))
 
+    api_outline = Config.FULL_API
     keys = Key.query.all()
     users = User.query.all()
     reqs = Request.query.all()
     logs = Log.query.order_by(Log.date.desc()).all()
 
-    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs)
+    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs, api_outline=api_outline)
 
 
 # ------------------------------------------------------------
@@ -433,10 +436,11 @@ def admin_answer_request():
             keyname = f"{req.keygroup_name}{i}"
             resp = create_key(name=keyname)
             if resp != 1:
+                prefix_index = randint(0, 19)
                 new_key = Key()
                 new_key.set_id(resp['id'])
                 new_key.set_keyname_name(resp['name'])
-                new_key.set_keyname(resp['accessUrl'])
+                new_key.set_keyname(resp['accessUrl'] + Config.PREFIXES[prefix_index])
                 new_key.set_username(req.username)
                 db.session.add(new_key)
             else:
