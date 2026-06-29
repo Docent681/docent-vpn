@@ -861,14 +861,20 @@ if (giveKeyForm) {
         loadingOverlay.classList.add('show');
         setClippyGif('typing');
 
-        fetch('{{ url_for("admin_give_key") }}', {
+        fetch('/admin_give_key', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(response => {
+            // Проверяем, что ответ успешный
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(result => {
             loadingOverlay.classList.remove('show');
 
@@ -884,10 +890,10 @@ if (giveKeyForm) {
                 showPopup('error', 'Ошибка', result.message || 'Не удалось выдать ключи');
             }
         })
-        .catch(() => {
+        .catch(error => {
             loadingOverlay.classList.remove('show');
             setClippyGif('error', true);
-            showPopup('error', 'Ошибка', 'Не удалось подключиться к серверу');
+            showPopup('error', 'Ошибка', error.message || 'Не удалось подключиться к серверу');
         });
     });
 }
