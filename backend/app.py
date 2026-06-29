@@ -336,12 +336,13 @@ def admin_dashboard():
     if admin_user is None or not admin_user.is_admin:
         return redirect(url_for('login', error="Недостаточно прав"))
 
+    api_outline = Config.FULL_API
     keys = Key.query.all()
     users = User.query.all()
     reqs = Request.query.all()
     logs = Log.query.order_by(Log.date.desc()).all()
 
-    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs)
+    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs, api_outline=api_outline)
 
 
 # ------------------------------------------------------------

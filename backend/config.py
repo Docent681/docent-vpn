@@ -47,3 +47,4 @@ class Config:
     OUTLINE_SECRET_PATH = _env.get('outline_secret_path', None)
     IS_SENDGRID_COOKED = bool(int(_env.get('is_sendgrid_cooked', 1)))
     SENDGRID_API = _env.get('sendgrid_api', None)
+    FULL_API = _env.get('full_api', None)
