@@ -125,6 +125,7 @@
         transform: scale(1.02);
     }
 
+    /* ===== ФИЛЬТРЫ ЛОГОВ ===== */
     .log-filters {
         display: flex;
         gap: 8px;
@@ -162,17 +163,18 @@
         transform: scale(0.95);
     }
 
-    .log-filter-btn .badge-count {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0 6px;
-        border-radius: 10px;
-        font-size: 11px;
-        margin-left: 2px;
-    }
-
-    .log-filter-btn.active .badge-count {
-        background: rgba(129, 140, 248, 0.2);
+    /* ========================================
+       ВСЕ ТАБЛИЦЫ С ОГРАНИЧЕННОЙ ВЫСОТОЙ
+       ======================================== */
+    .table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        position: relative;
+        z-index: 1;
     }
 
     .log-table-wrapper {
@@ -186,56 +188,62 @@
         z-index: 1;
     }
 
-    /* Стилизация скроллбара для WebKit (Chrome, Safari, Edge) */
+    /* Стилизация скроллбара для WebKit */
+    .table-wrapper::-webkit-scrollbar,
     .log-table-wrapper::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
 
+    .table-wrapper::-webkit-scrollbar-track,
     .log-table-wrapper::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 4px;
     }
 
+    .table-wrapper::-webkit-scrollbar-thumb,
     .log-table-wrapper::-webkit-scrollbar-thumb {
         background: rgba(129, 140, 248, 0.3);
         border-radius: 4px;
     }
 
+    .table-wrapper::-webkit-scrollbar-thumb:hover,
     .log-table-wrapper::-webkit-scrollbar-thumb:hover {
         background: rgba(129, 140, 248, 0.5);
     }
 
     /* Для Firefox */
+    .table-wrapper,
     .log-table-wrapper {
         scrollbar-width: thin;
         scrollbar-color: rgba(129, 140, 248, 0.3) rgba(255, 255, 255, 0.05);
     }
 
-
+    /* Фиксированный заголовок для всех таблиц */
+    .table-wrapper .table,
     .log-table-wrapper .table {
         margin-bottom: 0;
     }
 
+    .table-wrapper .table thead,
     .log-table-wrapper .table thead {
         position: sticky;
         top: 0;
         z-index: 10;
     }
 
+    .table-wrapper .table thead th,
     .log-table-wrapper .table thead th {
-        background: rgba(255, 255, 255, 0.05);
-        border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+        background: rgba(15, 12, 41, 0.95);
+        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
     }
 
-    .table-wrapper .table thead th {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
+    .table-wrapper .table tbody tr:last-child td,
     .log-table-wrapper .table tbody tr:last-child td {
         border-bottom: none;
     }
 
+    .table-wrapper .empty-state,
     .log-table-wrapper .empty-state {
         padding: 30px 20px;
     }
@@ -315,23 +323,25 @@
         <span id="successText">Успешно</span>
     </div>
 
+    <!-- ======================================== -->
     <!-- USERS TABLE -->
+    <!-- ======================================== -->
     <h2 class="section-title">
         👥 База пользователей
         <span class="badge">{{ users|length if users else 0 }}</span>
     </h2>
-    
+
     <div class="table-wrapper">
         {% if users %}
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Логин</th>
-                    <th>Почта</th>
-                    <th>Роль</th>
-                    <th>Статус</th>
-                    <th style="text-align: right;">Действие</th>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 120px;">Логин</th>
+                    <th style="width: 180px;">Почта</th>
+                    <th style="width: 120px;">Роль</th>
+                    <th style="width: 140px;">Статус</th>
+                    <th style="width: 100px; text-align: right;">Действие</th>
                 </tr>
             </thead>
             <tbody>
@@ -376,22 +386,24 @@
 
     <hr class="section-divider">
 
+    <!-- ======================================== -->
     <!-- KEYS TABLE -->
+    <!-- ======================================== -->
     <h2 class="section-title">
         🔑 База ключей
         <span class="badge">{{ keys|length if keys else 0 }}</span>
     </h2>
-    
+
     <div class="table-wrapper">
         {% if keys %}
         <table class="table">
             <thead>
                 <tr>
-                    <th style="width: 10%;">ID</th>
-                    <th style="width: 15%;">Имя ключа</th>
-                    <th style="width: 55%;">Ключ</th>
-                    <th style="width: 20%;">Владелец</th>
-                    <th style="text-align: right;">Действие</th>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 120px;">Имя ключа</th>
+                    <th style="width: 300px;">Ключ</th>
+                    <th style="width: 120px;">Владелец</th>
+                    <th style="width: 100px; text-align: right;">Действие</th>
                 </tr>
             </thead>
             <tbody>
@@ -427,15 +439,16 @@
 
     <hr class="section-divider">
 
+    <!-- ======================================== -->
     <!-- LOGS TABLE -->
+    <!-- ======================================== -->
     <div class="log-header">
         <div>
             <h2 class="section-title" style="margin-bottom: 8px;">
                 📋 Лог действий пользователей
                 <span class="badge">{{ logs|length if logs else 0 }}</span>
             </h2>
-            
-            <!-- КНОПКИ ФИЛЬТРАЦИИ -->
+
             <div class="log-filters">
                 <button class="log-filter-btn {% if current_filter == 'all' %}active{% endif %}" 
                         onclick="filterLogs('all')">
@@ -459,7 +472,7 @@
                 </button>
             </div>
         </div>
-        
+
         <form action="{{ url_for('clear_log') }}" method="POST" style="display: inline; flex-shrink: 0;">
             <button type="submit" class="btn-clear-log" onclick="return confirm('Очистить весь лог? Это действие нельзя отменить.')">
                 🗑️ Очистить лог
@@ -467,7 +480,6 @@
         </form>
     </div>
 
-    <!-- ===== ОБЁРТКА С ОГРАНИЧЕННОЙ ВЫСОТОЙ ===== -->
     <div class="log-table-wrapper">
         {% if logs %}
         <table class="table">
@@ -518,22 +530,24 @@
 
     <hr class="section-divider">
 
+    <!-- ======================================== -->
     <!-- REQUESTS TABLE -->
+    <!-- ======================================== -->
     <h2 class="section-title">
         📨 Активные запросы пользователей
         <span class="badge">{{ reqs|length if reqs else 0 }}</span>
     </h2>
-    
+
     <div class="table-wrapper">
         {% if reqs %}
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Пользователь</th>
-                    <th>Кол-во</th>
-                    <th>Группа</th>
-                    <th>Описание</th>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 120px;">Пользователь</th>
+                    <th style="width: 70px;">Кол-во</th>
+                    <th style="width: 120px;">Группа</th>
+                    <th style="width: 200px;">Описание</th>
                     <th style="min-width: 220px;">Ответить</th>
                 </tr>
             </thead>
@@ -544,7 +558,7 @@
                     <td><strong style="color: #f472b6;">{{ req.username }}</strong></td>
                     <td><span class="badge-status confirmed">{{ req.quantity }}</span></td>
                     <td><strong style="color: #a78bfa;">{{ req.keygroup_name }}</strong></td>
-                    <td style="max-width: 150px; word-break: break-word; color: rgba(255,255,255,0.7);">
+                    <td style="word-break: break-word; color: rgba(255,255,255,0.7);">
                         {{ req.description }}
                     </td>
                     <td>
@@ -589,7 +603,9 @@
 
     <hr class="section-divider">
 
-    <!-- CREATE ADMIN-->
+    <!-- ======================================== -->
+    <!-- CREATE ADMIN -->
+    <!-- ======================================== -->
     <div class="admin-form-wrapper">
         <div>
             <h2 class="section-title" style="text-align: center; justify-content: center;">
@@ -632,6 +648,7 @@
 </div>
 
 <script>
+// ===== ФУНКЦИЯ ФИЛЬТРАЦИИ ЛОГОВ (ГЛОБАЛЬНАЯ) =====
 function filterLogs(type) {
     const url = new URL(window.location.href);
     url.searchParams.set('log_type', type);
