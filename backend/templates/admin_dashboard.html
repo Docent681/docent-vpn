@@ -124,6 +124,119 @@
         background: rgba(239, 68, 68, 0.25);
         transform: scale(1.02);
     }
+
+    .log-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    }
+
+    .log-filter-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.6);
+        padding: 4px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .log-filter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .log-filter-btn.active {
+        background: rgba(129, 140, 248, 0.2);
+        border-color: rgba(129, 140, 248, 0.3);
+        color: #a78bfa;
+    }
+
+    .log-filter-btn:active {
+        transform: scale(0.95);
+    }
+
+    .log-filter-btn .badge-count {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0 6px;
+        border-radius: 10px;
+        font-size: 11px;
+        margin-left: 2px;
+    }
+
+    .log-filter-btn.active .badge-count {
+        background: rgba(129, 140, 248, 0.2);
+    }
+
+    .log-table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Стилизация скроллбара для WebKit (Chrome, Safari, Edge) */
+    .log-table-wrapper::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .log-table-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+    }
+
+    .log-table-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(129, 140, 248, 0.3);
+        border-radius: 4px;
+    }
+
+    .log-table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: rgba(129, 140, 248, 0.5);
+    }
+
+    /* Для Firefox */
+    .log-table-wrapper {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(129, 140, 248, 0.3) rgba(255, 255, 255, 0.05);
+    }
+
+    /* Фиксированный заголовок */
+    .log-table-wrapper .table {
+        margin-bottom: 0;
+    }
+
+    .log-table-wrapper .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .log-table-wrapper .table thead th {
+        background: rgba(15, 12, 41, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .log-table-wrapper .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Пустое состояние внутри wrapper */
+    .log-table-wrapper .empty-state {
+        padding: 30px 20px;
+    }
 </style>
 {% endblock %}
 
@@ -312,27 +425,61 @@
 
     <hr class="section-divider">
 
-    <!-- LOGS TABLE -->
+        <!-- LOGS TABLE -->
     <div class="log-header">
-        <h2 class="section-title" style="margin-bottom: 0;">
-            📋 Лог действий пользователей
-            <span class="badge">{{ logs|length if logs else 0 }}</span>
-        </h2>
-        <form action="{{ url_for('clear_log') }}" method="POST" style="display: inline;">
+        <div>
+            <h2 class="section-title" style="margin-bottom: 8px;">
+                📋 Лог действий пользователей
+                <span class="badge">{{ logs|length if logs else 0 }}</span>
+            </h2>
+            
+            <!-- КНОПКИ ФИЛЬТРАЦИИ -->
+            <div class="log-filters">
+                <button class="log-filter-btn {% if current_filter == 'all' %}active{% endif %}" 
+                        onclick="filterLogs('all')">
+                    📋 Все
+                    <span class="badge-count">{{ logs|length if logs else 0 }}</span>
+                </button>
+                <button class="log-filter-btn {% if current_filter == 'login_info' %}active{% endif %}" 
+                        onclick="filterLogs('login_info')">
+                    🔐 Вход/Выход
+                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'login_info')|list|length }}</span>
+                </button>
+                <button class="log-filter-btn {% if current_filter == 'request_info' %}active{% endif %}" 
+                        onclick="filterLogs('request_info')">
+                    📨 Запросы
+                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'request_info')|list|length }}</span>
+                </button>
+                <button class="log-filter-btn {% if current_filter == 'admin_info' %}active{% endif %}" 
+                        onclick="filterLogs('admin_info')">
+                    🛡️ Администрирование
+                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'admin_info')|list|length }}</span>
+                </button>
+                <button class="log-filter-btn {% if current_filter == 'keys_info' %}active{% endif %}" 
+                        onclick="filterLogs('keys_info')">
+                    🔑 Ключи
+                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'keys_info')|list|length }}</span>
+                </button>
+            </div>
+        </div>
+        
+        <form action="{{ url_for('clear_log') }}" method="POST" style="display: inline; flex-shrink: 0;">
             <button type="submit" class="btn-clear-log" onclick="return confirm('Очистить весь лог? Это действие нельзя отменить.')">
                 🗑️ Очистить лог
             </button>
         </form>
     </div>
 
-    <div class="table-wrapper">
+    <!-- ===== ОБЁРТКА С ОГРАНИЧЕННОЙ ВЫСОТОЙ ===== -->
+    <div class="log-table-wrapper">
         {% if logs %}
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Логин</th>
-                    <th>Дата</th>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 120px;">Логин</th>
+                    <th style="width: 150px;">Дата</th>
+                    <th style="width: 140px;">Тип</th>
                     <th>Действие</th>
                 </tr>
             </thead>
@@ -342,7 +489,20 @@
                     <td><code style="color: rgba(255,255,255,0.4);">#{{ log.id }}</code></td>
                     <td><strong style="color: #fff;">{{ log.username }}</strong></td>
                     <td style="color: rgba(255,255,255,0.6);">{{ log.date.strftime('%d.%m.%Y %H:%M') }}</td>
-                    <td style="color: rgba(255,255,255,0.8);">{{ log.action }}</td>
+                    <td>
+                        {% if log.type == 'login_info' %}
+                            <span class="badge-status" style="background: rgba(129, 140, 248, 0.2); color: #818cf8;">🔐 Вход</span>
+                        {% elif log.type == 'request_info' %}
+                            <span class="badge-status" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">📨 Запрос</span>
+                        {% elif log.type == 'admin_info' %}
+                            <span class="badge-status" style="background: rgba(244, 114, 182, 0.2); color: #f472b6;">🛡️ Админ</span>
+                        {% elif log.type == 'keys_info' %}
+                            <span class="badge-status" style="background: rgba(52, 211, 153, 0.2); color: #34d399;">🔑 Ключи</span>
+                        {% else %}
+                            <span class="badge-status" style="background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">📄 {{ log.type }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: rgba(255,255,255,0.8); word-break: break-word;">{{ log.action }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -350,7 +510,11 @@
         {% else %}
         <div class="empty-state">
             <span class="empty-icon">📋</span>
-            Записей в логе пока нет
+            {% if current_filter == 'all' %}
+                Записей в логе пока нет
+            {% else %}
+                Записей с таким типом пока нет
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -572,6 +736,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.showAdminError = showError;
     window.showAdminSuccess = showSuccess;
+
+    function filterLogs(type) {
+    // Добавляем параметр в URL и перезагружаем страницу
+    const url = new URL(window.location.href);
+    url.searchParams.set('log_type', type);
+    window.location.href = url.toString();
+    }
+
+
 });
 </script>
 {% endblock %}

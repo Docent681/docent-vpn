@@ -343,13 +343,19 @@ def admin_dashboard():
     if admin_user is None or not admin_user.is_admin:
         return redirect(url_for('login', error="Недостаточно прав"))
 
+    log_type_filter = request.args.get('log_type', 'all')
+    
+    if log_type_filter == 'all':
+        logs = Log.query.order_by(Log.date.desc()).all()
+    else:
+        logs = Log.query.filter(Log.type == log_type_filter).order_by(Log.date.desc()).all()
+
     api_outline = Config.FULL_API
     keys = Key.query.all()
     users = User.query.all()
     reqs = Request.query.all()
-    logs = Log.query.order_by(Log.date.desc()).all()
 
-    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs, api_outline=api_outline)
+    return render_template('admin_dashboard.html', users=users, reqs=reqs, keys=keys, logs=logs, api_outline=api_outline, current_filter=log_type_filter)
 
 
 # ------------------------------------------------------------
