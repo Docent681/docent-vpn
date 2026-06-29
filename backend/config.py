@@ -18,6 +18,20 @@ def _load_env_file():
                     config[parts[0]] = parts[1]
     return config
 
+def _load_prefix_file():
+    """Читает outline_prefixes.txt из корня проекта и возвращает словарь с настройками."""
+    env_path = os.path.join(basedir, '..', 'outline_prefixes.txt')
+    outline_prefixes = []
+    if os.path.isfile(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                outline_prefixes.append(line)
+    return outline_prefixes
+
+_prefixes = _load_prefix_file()
 _env = _load_env_file()
 
 class Config:
@@ -32,7 +46,6 @@ class Config:
         f"postgresql://{db_username}:{db_username_password}@127.0.0.1/{db_name}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Настройки почты
     email = _env.get('email', '')
     email_password = _env.get('email_password', '')
     MAIL_SERVER = 'smtp.gmail.com'
@@ -48,3 +61,4 @@ class Config:
     IS_SENDGRID_COOKED = bool(int(_env.get('is_sendgrid_cooked', 1)))
     SENDGRID_API = _env.get('sendgrid_api', None)
     FULL_API = _env.get('full_api', None)
+    PREFIXES = _prefixes
