@@ -224,9 +224,8 @@
     }
 
     .log-table-wrapper .table thead th {
-        background: rgba(15, 12, 41, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+        border-bottom: 2px solid rgba(255, 255, 255, 0.05);
     }
 
     .table-wrapper .table thead th {
@@ -441,27 +440,22 @@
                 <button class="log-filter-btn {% if current_filter == 'all' %}active{% endif %}" 
                         onclick="filterLogs('all')">
                     📋 Все
-                    <span class="badge-count">{{ logs|length if logs else 0 }}</span>
                 </button>
                 <button class="log-filter-btn {% if current_filter == 'login_info' %}active{% endif %}" 
                         onclick="filterLogs('login_info')">
                     🔐 Вход/Выход
-                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'login_info')|list|length }}</span>
                 </button>
                 <button class="log-filter-btn {% if current_filter == 'request_info' %}active{% endif %}" 
                         onclick="filterLogs('request_info')">
                     📨 Запросы
-                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'request_info')|list|length }}</span>
                 </button>
                 <button class="log-filter-btn {% if current_filter == 'admin_info' %}active{% endif %}" 
                         onclick="filterLogs('admin_info')">
                     🛡️ Администрирование
-                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'admin_info')|list|length }}</span>
                 </button>
                 <button class="log-filter-btn {% if current_filter == 'keys_info' %}active{% endif %}" 
                         onclick="filterLogs('keys_info')">
                     🔑 Ключи
-                    <span class="badge-count">{{ logs|selectattr('type', 'equalto', 'keys_info')|list|length }}</span>
                 </button>
             </div>
         </div>
