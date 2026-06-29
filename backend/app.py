@@ -17,9 +17,9 @@ migrate.init_app(app, db)
 # ------------------------------------------------------------
 # Вспомогательная функция для записи лога
 # ------------------------------------------------------------
-def write_log(username, action):
+def write_log(username, action, log_type):
     """Добавляет запись в таблицу logs."""
-    log_entry = Log.create_log(username, action)
+    log_entry = Log.create_log(username, action, log_type)
     db.session.add(log_entry)
     db.session.commit()
 
@@ -75,7 +75,7 @@ def register():
                     return redirect(url_for('verify', error=error))
                 else:
                     user.set_is_confirmed(True)
-                    write_log(username, "Успешная регистрация (без подтверждения почты)")
+                    write_log(username, "Успешная регистрация (без подтверждения почты)", "login_info")
                     return redirect(url_for('login', error=error))
             else:
                 user.set_is_confirmed(False)
@@ -93,7 +93,7 @@ def register():
 
         # Если есть ошибка, пишем лог и показываем форму
         if error:
-            write_log(username if username else 'неизвестный', f"Ошибка регистрации: {error}")
+            write_log(username if username else 'неизвестный', f"Ошибка регистрации: {error}", "login_info")
         return render_template('register.html', error=error)
 
     return render_template('register.html', error=error)
@@ -118,7 +118,7 @@ def verify():
                     return redirect(url_for('register', error=error))
                 user.set_is_confirmed(True)
                 db.session.commit()
-                write_log(user.get_username(), "Подтверждение регистрации (код верен)")
+                write_log(user.get_username(), "Подтверждение регистрации (код верен)", "login_info")
                 session.clear()
                 return redirect(url_for('login', error=error))
             else:
@@ -130,7 +130,7 @@ def verify():
         else:
             # Неверный код
             error = "Вы неверно ввели код подтверждения. Попробуйте зарегистрироваться заново"
-            write_log(user.get_username() if user else 'неизвестный', "Неверный код подтверждения")
+            write_log(user.get_username() if user else 'неизвестный', "Неверный код подтверждения", "login_info")
             db.session.delete(user)
             db.session.commit()
             session.clear()
@@ -199,7 +199,7 @@ def logout():
     error = None
     current_user = session.get('current_user_login')
     if current_user:
-        write_log(current_user, "Выход из системы")
+        write_log(current_user, "Выход из системы", "login_info")
     session.clear()
     return redirect(url_for('login', error=error))
 
@@ -222,7 +222,7 @@ def login():
             user_type = request.form.get('user_type')
 
         user = User.query.filter((User.username == username) | (User.email == username)).first()
-        
+
         if user is None:
             return {"success": False, "message": "Неверный логин или пароль"}, 400
         elif not user.check_password(password):
@@ -236,10 +236,10 @@ def login():
         session['current_user_login'] = user.username
 
         if user_type == 'user_choice':
-            write_log(user.username, f"Вошел в систему как пользователь")
+            write_log(user.username, "Вход в систему как пользователь", "login_info")
             return {"success": True, "redirect": url_for('user_dashboard')}
         else:
-            write_log(user.username, f"Вошел в систему как администратор")
+            write_log(user.username, "Вход в систему как администратор", "login_info")
             return {"success": True, "redirect": url_for('admin_dashboard')}
 
     return render_template('login.html')
@@ -286,7 +286,7 @@ def delete_key():
     delete_user_key(key_id)
     db.session.delete(key)
     db.session.commit()
-    write_log(current_user, f"Удалён ключ {key.keyidentity}")
+    write_log(current_user, f"Удалён ключ {key.keyidentity}", "keys_info")
     return redirect(url_for('user_dashboard', error=error))
 
 
@@ -318,7 +318,7 @@ def request_key():
     db.session.add(req)
     db.session.commit()
 
-    write_log(current_user, f"Отправлен запрос на {key_amount} ключей, группа '{keygroup_name}'")
+    write_log(current_user, f"Отправлен запрос на {key_amount} ключей, группа '{keygroup_name}'", "request_info")
     return redirect(url_for('user_dashboard', error=error))
 
 
@@ -375,7 +375,7 @@ def admin_delete_user():
     db.session.delete(user)
     db.session.commit()
 
-    write_log(current_admin, f"Удалён пользователь {user.username}")
+    write_log(current_admin, f"Удалён пользователь {user.username}", "admin_info")
     return redirect(url_for('admin_dashboard', error=error))
 
 
@@ -395,7 +395,7 @@ def admin_delete_key():
     db.session.delete(key)
     db.session.commit()
 
-    write_log(current_admin, f"Удалён ключ {key.keyidentity}")
+    write_log(current_admin, f"Удалён ключ {key.keyidentity}", "keys_info")
     return redirect(url_for('admin_dashboard', error=error))
 
 
@@ -441,16 +441,16 @@ def admin_answer_request():
                 db.session.add(new_key)
             else:
                 error = "Не удалось создать новый ключ"
-                write_log(current_admin, f"Ошибка создания ключа для запроса от {req.username}")
+                write_log(current_admin, f"Ошибка создания ключа для запроса от {req.username}", "keys_info")
                 break
         else:
             # Если цикл завершился без break
             answer.set_verdict(True)
-            write_log(current_admin, f"Одобрен запрос от {req.username} на {req.quantity} ключей")
+            write_log(current_admin, f"Одобрен запрос от {req.username} на {req.quantity} ключей", "request_info")
         db.session.commit()
     else:
         answer.set_verdict(False)
-        write_log(current_admin, f"Отклонён запрос от {req.username}")
+        write_log(current_admin, f"Отклонён запрос от {req.username}", "request_info")
 
     # Удаляем запрос и сохраняем ответ
     db.session.delete(req)
@@ -466,7 +466,7 @@ def admin_answer_request():
 @app.route('/create_new_admin', methods=['POST'])
 def create_new_admin():
     current_admin = session.get('current_user_login')
-    
+
     # Проверяем, JSON ли пришёл
     if request.is_json:
         data = request.get_json()
@@ -500,33 +500,33 @@ def create_new_admin():
         # Проверяем, не админ ли уже
         if existing_user.is_admin:
             return {"success": False, "message": f"Пользователь '{existing_user.username}' уже является администратором"}, 400
-        
+
         # Обновляем поля, если они переданы
         if username and existing_user.username != username:
             existing_by_username = User.query.filter(User.username == username).first()
             if existing_by_username and existing_by_username.id != existing_user.id:
                 return {"success": False, "message": f"Логин '{username}' уже используется"}, 400
             existing_user.set_username(username)
-            
+
         if email and existing_user.email != email:
             existing_by_email = User.query.filter(User.email == email).first()
             if existing_by_email and existing_by_email.id != existing_user.id:
                 return {"success": False, "message": f"Почта '{email}' уже используется"}, 400
             existing_user.set_email(email)
-        
+
         existing_user.set_is_admin(True)
         db.session.commit()
-        
-        write_log(current_admin, f"Пользователю '{existing_user.username}' выданы права администратора")
+
+        write_log(current_admin, f"Пользователю '{existing_user.username}' выданы права администратора", "admin_info")
         return {"success": True, "message": f"Пользователь '{existing_user.username}' стал администратором"}, 200
 
     # ===== 5. Создаём нового пользователя =====
     if not username:
         return {"success": False, "message": "Для нового пользователя необходимо указать логин"}, 400
-    
+
     if not email:
         return {"success": False, "message": "Для нового пользователя необходимо указать почту"}, 400
-    
+
     if not password or not password_repeat:
         return {"success": False, "message": "Для нового пользователя необходимо ввести пароль"}, 400
 
@@ -536,12 +536,11 @@ def create_new_admin():
     user.set_password(password)
     user.set_is_admin(True)
     user.set_is_confirmed(True)
-    
+
     db.session.add(user)
     db.session.commit()
-    write_log(current_admin, f"Создан новый администратор '{username}'")
+    write_log(current_admin, f"Создан новый администратор '{username}'", "admin_info")
     return {"success": True, "message": f"Администратор '{username}' успешно создан"}, 200
-
 
 
 # ------------------------------------------------------------

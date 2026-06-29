@@ -10,6 +10,7 @@ class Log(db.Model):
     username = db.Column(db.String(64), unique=False, nullable=False)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     action = db.Column(db.String(512), unique=False, nullable=False)
+    type = db.Column(db.String(32), unique=False)
 
     def set_username(self, username):
         self.username = username
@@ -19,6 +20,9 @@ class Log(db.Model):
 
     def set_action(self, action):
         self.action = action
+
+    def set_type(self, type):
+        self.type = type
 
     def get_username(self):
         return self.username
@@ -30,10 +34,11 @@ class Log(db.Model):
         return self.action
 
     @staticmethod
-    def create_log(username, action):
+    def create_log(username, action, type):
         log = Log()
         log.set_username(username)
         log.set_action(action)
+        log.set_type(type)
         return log
 
     def __repr__(self):
