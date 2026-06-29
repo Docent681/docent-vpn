@@ -234,8 +234,8 @@
 
     .table-wrapper .table thead th,
     .log-table-wrapper .table thead th {
-        background: rgba(15, 12, 41, 0.95);
-        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        background: #2a2554;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     .table-wrapper .table tbody tr:last-child td,
@@ -559,7 +559,6 @@
         <div>
             <h2 class="section-title" style="margin-bottom: 8px;">
                 📋 Лог действий пользователей
-                <span class="badge">{{ logs|length if logs else 0 }}</span>
             </h2>
 
             <div class="log-filters">
