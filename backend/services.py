@@ -69,6 +69,31 @@ def create_key(name=None, method=None, password=None, port=None, limit_bytes=Non
 
     return error
 
+def get_keys():
+    url_base = f"{Config.API_URL}"
+    token = f"{Config.OUTLINE_SECRET_PATH}"
+    url = f"{url_base}/{token}/access-keys"
+
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.delete(url, timeout=10, headers=headers, verify=False)
+        resp.raise_for_status()
+        res = resp.json()
+        keynames = []
+        for key in res:
+            key = key.json()
+            keynames.append([key['name'], key['accessUrl']])
+
+    except requests.RequestException as e:
+        error = 1
+        return error
+
+    return keynames
+
+
 #функция-обертка для удаления ключа по id
 def delete_user_key(id):
     error = 0
