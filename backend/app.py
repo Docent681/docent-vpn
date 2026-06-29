@@ -414,6 +414,67 @@ def admin_delete_key():
 
 
 # ------------------------------------------------------------
+# Создание нового ключа администратором
+# ------------------------------------------------------------
+@app.route('/admin_give_key', methods=['POST'])
+def admin_give_key():
+    current_admin = session.get('current_user_login')
+    
+    if request.is_json:
+        data = request.get_json()
+        username = data.get('username')
+        key_amount = data.get('key_amount')
+        key_name = data.get('key_name')
+    else:
+        username = request.form.get('username')
+        key_amount = request.form.get('key_amount')
+        key_name = request.form.get('key_name')
+
+    # Проверяем, что все поля заполнены
+    if not username or not key_amount or not key_name:
+        return {"success": False, "message": "Заполните все поля"}, 400
+
+    # Проверяем количество
+    try:
+        key_amount_int = int(key_amount)
+    except (TypeError, ValueError):
+        return {"success": False, "message": "Укажите корректное количество ключей"}, 400
+
+    if key_amount_int < 1 or key_amount_int > 100:
+        return {"success": False, "message": "Количество ключей должно быть от 1 до 100"}, 400
+
+    # Проверяем, существует ли пользователь
+    user = User.query.filter(User.username == username).first()
+    if not user:
+        return {"success": False, "message": f"Пользователь '{username}' не найден"}, 400
+
+    # Создаём ключи
+    created_keys = 0
+    for i in range(key_amount_int):
+        keyname = f"{key_name}{i}"
+        resp = create_key(name=keyname)
+        if resp != 1:
+            prefix_index = randint(0, 19) if hasattr(Config, 'PREFIXES') and Config.PREFIXES else 0
+            new_key = Key()
+            new_key.set_id(resp['id'])
+            new_key.set_keyname_name(resp['name'])
+            new_key.set_keyname(resp['accessUrl'] + (Config.PREFIXES[prefix_index] if hasattr(Config, 'PREFIXES') and Config.PREFIXES else ''))
+            new_key.set_username(username)
+            db.session.add(new_key)
+            created_keys += 1
+        else:
+            write_log(current_admin, f"Ошибка создания ключа для {username}", "keys_info")
+            break
+
+    if created_keys > 0:
+        db.session.commit()
+        write_log(current_admin, f"Выдал {created_keys} ключей пользователю '{username}' (группа: {key_name})", "admin_info")
+        return {"success": True, "message": f"Выдано {created_keys} ключей пользователю '{username}'"}, 200
+    else:
+        return {"success": False, "message": "Не удалось создать ни одного ключа"}, 400
+
+
+# ------------------------------------------------------------
 # Ответ на запрос пользователя
 # ------------------------------------------------------------
 @app.route('/admin_answer_request', methods=['POST'])

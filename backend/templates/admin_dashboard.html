@@ -348,6 +348,42 @@
         }
     }
 
+    .admin-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-top: 10px;
+    }
+
+    .admin-action-card {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: all 0.3s ease;
+    }
+
+    .admin-action-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .admin-action-card .admin-form {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .admin-action-card .btn-primary {
+        margin-top: 4px;
+    }
+
+    @media (max-width: 992px) {
+        .admin-actions-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+
 </style>
 {% endblock %}
 
@@ -716,12 +752,15 @@
     <hr class="section-divider">
 
     <!-- ======================================== -->
-    <!-- CREATE ADMIN -->
+    <!-- ADMIN ACTIONS (2 колонки) -->
     <!-- ======================================== -->
-    <div class="admin-form-wrapper">
-        <div>
-            <h2 class="section-title" style="text-align: center; justify-content: center;">
-                👑 Создать нового администратора
+    <hr class="section-divider">
+
+    <div class="admin-actions-grid">
+        <!-- ЛЕВАЯ КОЛОНКА: Создать администратора -->
+        <div class="admin-action-card">
+            <h2 class="section-title" style="text-align: center; justify-content: center; margin-bottom: 20px;">
+                👑 Создать администратора
             </h2>
             
             <form action="{{ url_for('create_new_admin') }}" method="POST" class="admin-form" id="createAdminForm">
@@ -756,10 +795,103 @@
                 <button type="submit" class="btn-primary" id="createAdminBtn">👑 Создать администратора</button>
             </form>
         </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: Выдать ключ -->
+        <div class="admin-action-card">
+            <h2 class="section-title" style="text-align: center; justify-content: center; margin-bottom: 20px;">
+                🔑 Выдать ключ
+            </h2>
+            
+            <form id="giveKeyForm" class="admin-form">
+                <div class="form-group">
+                    <label for="give_key_username">👤 Пользователь</label>
+                    <input type="text" id="give_key_username" name="username" placeholder="Введите логин пользователя" required>
+                    <div class="hint">Логин пользователя, которому выдаётся ключ</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="give_key_amount">🔢 Количество</label>
+                        <input type="number" id="give_key_amount" name="key_amount" placeholder="Сколько ключей?" required min="1" max="100" value="1">
+                        <div class="hint">Максимум 100 ключей</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="give_key_name">📛 Название ключа</label>
+                        <input type="text" id="give_key_name" name="key_name" placeholder="Например: Рабочие" required minlength="3" maxlength="50">
+                        <div class="hint">От 3 до 50 символов</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="giveKeyBtn" style="background: linear-gradient(135deg, #34d399, #059669);">
+                    🚀 Выдать ключ
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
+const giveKeyForm = document.getElementById('giveKeyForm');
+const giveKeyBtn = document.getElementById('giveKeyBtn');
+
+if (giveKeyForm) {
+    giveKeyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = {
+            username: formData.get('username'),
+            key_amount: formData.get('key_amount'),
+            key_name: formData.get('key_name')
+        };
+
+        // Проверка полей
+        if (!data.username || !data.key_amount || !data.key_name) {
+            showPopup('error', 'Ошибка', 'Заполните все поля');
+            return;
+        }
+
+        const amount = parseInt(data.key_amount);
+        if (amount < 1 || amount > 100) {
+            showPopup('error', 'Ошибка', 'Количество ключей должно быть от 1 до 100');
+            return;
+        }
+
+        loadingOverlay.classList.add('show');
+        setClippyGif('typing');
+
+        fetch('{{ url_for("admin_give_key") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            loadingOverlay.classList.remove('show');
+
+            if (result.success) {
+                showPopup('success', 'Успешно!', result.message || 'Ключи выданы!');
+                giveKeyForm.reset();
+                setClippyGif('hello');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                setClippyGif('error', true);
+                showPopup('error', 'Ошибка', result.message || 'Не удалось выдать ключи');
+            }
+        })
+        .catch(() => {
+            loadingOverlay.classList.remove('show');
+            setClippyGif('error', true);
+            showPopup('error', 'Ошибка', 'Не удалось подключиться к серверу');
+        });
+    });
+}
+
 // ===== ФУНКЦИЯ ФИЛЬТРАЦИИ ЛОГОВ (ГЛОБАЛЬНАЯ) =====
 function filterLogs(type) {
     const url = new URL(window.location.href);
