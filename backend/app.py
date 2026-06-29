@@ -441,11 +441,11 @@ def admin_answer_request():
             keyname = f"{req.keygroup_name}{i}"
             resp = create_key(name=keyname)
             if resp != 1:
-                prefix_index = randint(0, 19)
+                prefix_index = randint(0, Config.PREFIXES[-1] - 1)
                 new_key = Key()
                 new_key.set_id(resp['id'])
                 new_key.set_keyname_name(resp['name'])
-                new_key.set_keyname(resp['accessUrl'] + Config.PREFIXES[prefix_index])
+                new_key.set_keyname(resp['accessUrl'] + str(Config.PREFIXES[prefix_index]))
                 new_key.set_username(req.username)
                 db.session.add(new_key)
             else:
