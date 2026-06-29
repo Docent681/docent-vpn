@@ -126,10 +126,10 @@
     }
 
     .log-filters {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 4px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
     }
 
     .log-filter-btn {
@@ -212,7 +212,7 @@
         scrollbar-color: rgba(129, 140, 248, 0.3) rgba(255, 255, 255, 0.05);
     }
 
-    /* Фиксированный заголовок */
+
     .log-table-wrapper .table {
         margin-bottom: 0;
     }
@@ -229,11 +229,14 @@
         border-bottom: 2px solid rgba(255, 255, 255, 0.08);
     }
 
+    .table-wrapper .table thead th {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
     .log-table-wrapper .table tbody tr:last-child td {
         border-bottom: none;
     }
 
-    /* Пустое состояние внутри wrapper */
     .log-table-wrapper .empty-state {
         padding: 30px 20px;
     }
@@ -425,7 +428,7 @@
 
     <hr class="section-divider">
 
-        <!-- LOGS TABLE -->
+    <!-- LOGS TABLE -->
     <div class="log-header">
         <div>
             <h2 class="section-title" style="margin-bottom: 8px;">
@@ -635,6 +638,12 @@
 </div>
 
 <script>
+function filterLogs(type) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('log_type', type);
+    window.location.href = url.toString();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const clippy = document.getElementById('clippyGif');
     const adminForm = document.getElementById('createAdminForm');
@@ -648,11 +657,32 @@ document.addEventListener('DOMContentLoaded', function() {
         setClippy(clippy, gifKey, { isError, isSuccess });
     }
 
+    function showError(message) {
+        errorText.textContent = message || 'Произошла ошибка. Попробуйте снова.';
+        errorMsg.classList.add('show');
+        setClippyGif('error', true);
+        loadingOverlay.classList.remove('show');
+        setTimeout(() => {
+            errorMsg.classList.remove('show');
+            setClippyGif('hello');
+        }, 5000);
+    }
+
+    function showSuccess(message) {
+        successText.textContent = message || 'Операция выполнена успешно!';
+        successMsg.classList.add('show');
+        setClippyGif('success', false, true);
+        loadingOverlay.classList.remove('show');
+        setTimeout(() => {
+            successMsg.classList.remove('show');
+            setClippyGif('hello');
+        }, 4000);
+    }
+
     // ===== СОЗДАНИЕ АДМИНИСТРАТОРА (AJAX) =====
     adminForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Собираем данные
         const formData = new FormData(this);
         const data = {
             username: formData.get('username'),
@@ -661,11 +691,9 @@ document.addEventListener('DOMContentLoaded', function() {
             password_repeat: formData.get('password_repeat')
         };
 
-        // Показываем загрузку
         loadingOverlay.classList.add('show');
         setClippyGif('typing');
 
-        // Отправляем запрос
         fetch('{{ url_for("create_new_admin") }}', {
             method: 'POST',
             headers: {
@@ -697,9 +725,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ===== ОБРАБОТКА ПАРАМЕТРОВ URL =====
-    // Удаляем старую проверку error === '1'
-    // Оставляем только для других операций (удаление пользователя, ключа и т.д.)
-    
     if (getUrlParam('error') === '1') {
         setTimeout(() => showError('Ошибка при выполнении операции'), 500);
     }
@@ -724,7 +749,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => showSuccess('Лог успешно очищен!'), 500);
     }
 
-    // Если есть параметр error с текстом (не через '1')
     const errorParam = getUrlParam('error');
     if (errorParam && errorParam !== '1') {
         setTimeout(() => {
@@ -736,15 +760,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.showAdminError = showError;
     window.showAdminSuccess = showSuccess;
-
-    function filterLogs(type) {
-    // Добавляем параметр в URL и перезагружаем страницу
-    const url = new URL(window.location.href);
-    url.searchParams.set('log_type', type);
-    window.location.href = url.toString();
-    }
-
-
 });
 </script>
 {% endblock %}
