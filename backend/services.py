@@ -79,12 +79,12 @@ def get_keys():
     }
 
     try:
-        resp = requests.delete(url, timeout=10, headers=headers, verify=False)
+        resp = requests.get(url, timeout=10, headers=headers, verify=False)
         resp.raise_for_status()
         res = resp.json()
+        res = res['accessKeys']
         keynames = []
         for key in res:
-            key = key.json()
             keynames.append([key['name'], key['accessUrl']])
 
     except requests.RequestException as e:
