@@ -217,11 +217,9 @@ def login():
             data = request.get_json()
             username = data.get('username')
             password = data.get('password')
-            user_type = data.get('user_type')
         else:
             username = request.form.get('username')
             password = request.form.get('password')
-            user_type = request.form.get('user_type')
 
         user = User.query.filter((User.username == username) | (User.email == username)).first()
 
@@ -231,18 +229,17 @@ def login():
             return {"success": False, "message": "Неверный логин или пароль"}, 400
         elif not user.get_is_confirmed():
             return {"success": False, "message": "Пожалуйста, подтвердите регистрацию по коду из письма"}, 400
-        elif user_type == 'admin_choice' and user.is_admin == False:
-            return {"success": False, "message": "У вас нет прав администратора"}, 400
 
         session.clear()
         session['current_user_login'] = user.username
 
-        if user_type == 'user_choice':
-            write_log(user.username, "Вход в систему как пользователь", "login_info")
-            return {"success": True, "redirect": url_for('user_dashboard')}
-        else:
+        # Автоматическое определение роли
+        if user.is_admin:
             write_log(user.username, "Вход в систему как администратор", "login_info")
             return {"success": True, "redirect": url_for('admin_dashboard')}
+        else:
+            write_log(user.username, "Вход в систему как пользователь", "login_info")
+            return {"success": True, "redirect": url_for('user_dashboard')}
 
     return render_template('login.html')
 
@@ -305,7 +302,15 @@ def request_key():
     key_amount = request.form.get("key_amount")
     keygroup_name = request.form.get("keygroup_name")
     description = request.form.get("description")
-
+    try:
+        key_amount_int = int(key_amount)
+    except (TypeError, ValueError):
+        return redirect(url_for('user_dashboard', error="Укажите корректное количество ключей"))
+        
+    if key_amount_int < 1:
+        return redirect(url_for('user_dashboard', error="Минимум 1 ключ"))
+    if key_amount_int > 100:
+        return redirect(url_for('user_dashboard', error="Максимум 100 ключей за запрос"))
     # Удаляем старый запрос, если есть
     old_req = Request.query.filter(Request.username == current_user).first()
     if old_req:

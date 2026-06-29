@@ -178,8 +178,8 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="key_amount">Количество ключей</label>
-                    <input type="number" id="key_amount" name="key_amount" placeholder="Сколько ключей нужно?" required min="1" max="10">
-                    <div class="hint">Максимум 10 ключей за один запрос</div>
+                    <input type="number" id="key_amount" name="key_amount" placeholder="Сколько ключей нужно?" required min="1" max="100">
+                    <div class="hint">Максимум 100 ключей за один запрос</div>
                 </div>
 
                 <div class="form-group">
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!amount || amount < 1) {
             errors.push('Укажите количество ключей (минимум 1)');
             keyAmount.classList.add('error');
-        } else if (amount > 10) {
+        } else if (amount > 100) {
             errors.push('Максимум 10 ключей за запрос');
             keyAmount.classList.add('error');
         } else {
