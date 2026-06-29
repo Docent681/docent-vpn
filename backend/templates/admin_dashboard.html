@@ -247,18 +247,19 @@
     .log-table-wrapper .empty-state {
         padding: 30px 20px;
     }
+
     .api-info-bar {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 10px 18px;
-    margin-bottom: 24px;
-    position: relative;
-    z-index: 1;
-    transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 10px 18px;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
     }
 
     .api-info-bar:hover {
@@ -383,7 +384,6 @@
             gap: 20px;
         }
     }
-
 </style>
 {% endblock %}
 
@@ -754,8 +754,6 @@
     <!-- ======================================== -->
     <!-- ADMIN ACTIONS (2 колонки) -->
     <!-- ======================================== -->
-    <hr class="section-divider">
-
     <div class="admin-actions-grid">
         <!-- ЛЕВАЯ КОЛОНКА: Создать администратора -->
         <div class="admin-action-card">
@@ -832,72 +830,6 @@
 </div>
 
 <script>
-const giveKeyForm = document.getElementById('giveKeyForm');
-const giveKeyBtn = document.getElementById('giveKeyBtn');
-
-if (giveKeyForm) {
-    giveKeyForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const formData = new FormData(this);
-        const data = {
-            username: formData.get('username'),
-            key_amount: formData.get('key_amount'),
-            key_name: formData.get('key_name')
-        };
-
-        // Проверка полей
-        if (!data.username || !data.key_amount || !data.key_name) {
-            showPopup('error', 'Ошибка', 'Заполните все поля');
-            return;
-        }
-
-        const amount = parseInt(data.key_amount);
-        if (amount < 1 || amount > 100) {
-            showPopup('error', 'Ошибка', 'Количество ключей должно быть от 1 до 100');
-            return;
-        }
-
-        loadingOverlay.classList.add('show');
-        setClippyGif('typing');
-
-        fetch('/admin_give_key', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            // Проверяем, что ответ успешный
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(result => {
-            loadingOverlay.classList.remove('show');
-
-            if (result.success) {
-                showPopup('success', 'Успешно!', result.message || 'Ключи выданы!');
-                giveKeyForm.reset();
-                setClippyGif('hello');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                setClippyGif('error', true);
-                showPopup('error', 'Ошибка', result.message || 'Не удалось выдать ключи');
-            }
-        })
-        .catch(error => {
-            loadingOverlay.classList.remove('show');
-            setClippyGif('error', true);
-            showPopup('error', 'Ошибка', error.message || 'Не удалось подключиться к серверу');
-        });
-    });
-}
-
 // ===== ФУНКЦИЯ ФИЛЬТРАЦИИ ЛОГОВ (ГЛОБАЛЬНАЯ) =====
 function filterLogs(type) {
     const url = new URL(window.location.href);
@@ -908,6 +840,7 @@ function filterLogs(type) {
 document.addEventListener('DOMContentLoaded', function() {
     const clippy = document.getElementById('clippyGif');
     const adminForm = document.getElementById('createAdminForm');
+    const giveKeyForm = document.getElementById('giveKeyForm');
     const loadingOverlay = document.getElementById('loadingOverlay');
     const errorMsg = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
@@ -984,6 +917,74 @@ document.addEventListener('DOMContentLoaded', function() {
             showPopup('error', 'Ошибка', 'Не удалось подключиться к серверу');
         });
     });
+
+    // ===== ВЫДАЧА КЛЮЧА (AJAX) =====
+    if (giveKeyForm) {
+        giveKeyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                key_amount: formData.get('key_amount'),
+                key_name: formData.get('key_name')
+            };
+
+            console.log('📤 Отправка данных:', data);
+
+            // Проверка полей
+            if (!data.username || !data.key_amount || !data.key_name) {
+                showPopup('error', 'Ошибка', 'Заполните все поля');
+                return;
+            }
+
+            const amount = parseInt(data.key_amount);
+            if (amount < 1 || amount > 100) {
+                showPopup('error', 'Ошибка', 'Количество ключей должно быть от 1 до 100');
+                return;
+            }
+
+            loadingOverlay.classList.add('show');
+            setClippyGif('typing');
+
+            fetch('/admin_give_key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                console.log('📥 Статус ответа:', response.status);
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('📥 Результат:', result);
+                loadingOverlay.classList.remove('show');
+
+                if (result.success) {
+                    showPopup('success', 'Успешно!', result.message || 'Ключи выданы!');
+                    giveKeyForm.reset();
+                    setClippyGif('hello');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    setClippyGif('error', true);
+                    showPopup('error', 'Ошибка', result.message || 'Не удалось выдать ключи');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Ошибка:', error);
+                loadingOverlay.classList.remove('show');
+                setClippyGif('error', true);
+                showPopup('error', 'Ошибка', error.message || 'Не удалось подключиться к серверу');
+            });
+        });
+    }
 
     // ===== ОБРАБОТКА ПАРАМЕТРОВ URL =====
     if (getUrlParam('error') === '1') {
