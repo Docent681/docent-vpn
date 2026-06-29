@@ -29,6 +29,7 @@ def _load_prefix_file():
                 if not line or line.startswith('#'):
                     continue
                 outline_prefixes.append(line)
+            outline_prefixes.append(len(outline_prefixes))
     return outline_prefixes
 
 _prefixes = _load_prefix_file()
