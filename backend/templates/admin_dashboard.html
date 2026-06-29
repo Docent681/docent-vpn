@@ -247,6 +247,107 @@
     .log-table-wrapper .empty-state {
         padding: 30px 20px;
     }
+    .api-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 10px 18px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+    }
+
+    .api-info-bar:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .api-info-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+        opacity: 0.7;
+    }
+
+    .api-info-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .api-info-label {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .api-info-value {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        font-family: 'Courier New', monospace;
+        word-break: break-all;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 12px;
+        border-radius: 6px;
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .api-info-copy {
+        background: rgba(129, 140, 248, 0.12);
+        border: 1px solid rgba(129, 140, 248, 0.15);
+        color: #a78bfa;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        line-height: 1.4;
+    }
+
+    .api-info-copy:hover {
+        background: rgba(129, 140, 248, 0.2);
+        transform: scale(1.05);
+    }
+
+    .api-info-copy.copied {
+        background: rgba(52, 211, 153, 0.2);
+        border-color: rgba(52, 211, 153, 0.3);
+        color: #34d399;
+    }
+
+    @media (max-width: 600px) {
+        .api-info-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            padding: 12px 14px;
+        }
+
+        .api-info-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .api-info-value {
+            font-size: 12px;
+            padding: 4px 10px;
+        }
+
+        .api-info-copy {
+            align-self: flex-start;
+        }
+    }
+
 </style>
 {% endblock %}
 
@@ -286,6 +387,18 @@
             У вас <span class="highlight">{{ users|length if users else 0 }}</span> пользователей, 
             <span class="highlight">{{ keys|length if keys else 0 }}</span> ключей и 
             <span class="highlight">{{ reqs|length if reqs else 0 }}</span> активных запросов.
+        </div>
+    </div>
+
+    <!-- API OUTLINE INFO -->
+    <div class="api-info-bar">
+        <div class="api-info-icon">🌐</div>
+        <div class="api-info-content">
+            <span class="api-info-label">Outline API:</span>
+            <span class="api-info-value">{{ api_outline or 'Не настроен' }}</span>
+            <button class="api-info-copy" onclick="copyToClipboard('{{ api_outline or '' }}', this)" title="Скопировать API URL">
+                📋
+            </button>
         </div>
     </div>
 
