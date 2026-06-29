@@ -414,6 +414,43 @@ def admin_delete_key():
 
 
 # ------------------------------------------------------------
+# Создание нового ключа администратором
+# ------------------------------------------------------------
+@app.route('/admin_create_key', methods=['POST'])
+def admin_create_key():
+    error = None
+    current_admin = session.get('current_user_login')
+    keygroup_name = request.form.get('keygroup_name')
+    quantity = request.form.get('quantity')
+    username = request.form.get('username')
+
+    if quantity is None:
+        write_log(current_admin, f"Ошибка создания ключей", "keys_info")
+        return redirect(url_for('admin_dashboard'))
+
+    for i in range(int(quantity)):
+        keyname = f"{keygroup_name}{i}"
+        resp = create_key(name=keyname)
+        if resp != 1:
+            prefix_index = randint(0, Config.PREFIXES[-1] - 1)
+            new_key = Key()
+            new_key.set_id(resp['id'])
+            new_key.set_keyname_name(resp['name'])
+            new_key.set_keyname(resp['accessUrl'] + str(Config.PREFIXES[prefix_index]))
+            new_key.set_username(username)
+            db.session.add(new_key)
+        else:
+            error = "Не удалось создать новый ключ"
+            write_log(current_admin, f"Ошибка создания ключа", "keys_info")
+            redirect(url_for('admin_dashboard'))
+
+    db.session.commit()
+
+    write_log(current_admin, f"Создан ключи {keygroup_name}", "keys_info")
+    return redirect(url_for('admin_dashboard', error=error))
+
+
+# ------------------------------------------------------------
 # Ответ на запрос пользователя
 # ------------------------------------------------------------
 @app.route('/admin_answer_request', methods=['POST'])
