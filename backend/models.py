@@ -49,7 +49,7 @@ class Key(db.Model):
     __tablename__ = 'keys'
 
     id = db.Column(db.Integer, primary_key=True)
-    keyidentity = db.Column(db.String(64), unique=False, nullable=False)
+    keyidentity = db.Column(db.String(64), unique=False, nullable=True)
     keyname = db.Column(db.String(128), unique=True, nullable=False, index=True)
     username = db.Column(db.String(64), unique=False, nullable=False)
 
