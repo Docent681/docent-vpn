@@ -3,11 +3,11 @@ Description=Docent VPN Flask backend
 After=network.target postgresql.service
 
 [Service]
-User=admin
-Group=admin
-WorkingDirectory=/home/admin/docent-vpn/backend
+User=
+Group=
+WorkingDirectory=
 Environment=
-ExecStart=/home/admin/docent-vpn/backend/.venv/bin/python3 check_keys.py
+ExecStart=
 Restart=always
 RestartSec=5
 
