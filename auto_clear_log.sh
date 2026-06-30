@@ -2,7 +2,7 @@
 
 # Настройки
 CONFIG_FILE="$HOME/docent-vpn/envy.conf"
-SLEEP_INTERVAL=900 # 15 минут
+SLEEP_INTERVAL=300 # 5 минут
 
 TYPES=("login_info" "request_info" "admin_info" "keys_info")
 THRESHOLD=500

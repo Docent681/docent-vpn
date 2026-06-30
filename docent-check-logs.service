@@ -3,11 +3,11 @@ Description=Docent VPN Flask backend
 After=network.target postgresql.service
 
 [Service]
-User=
-Group=
-WorkingDirectory=
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/docent-vpn
 Environment=
-ExecStart=
+ExecStart=/home/admin/docent-vpn/auto_clear_log.sh
 Restart=always
 RestartSec=5
 

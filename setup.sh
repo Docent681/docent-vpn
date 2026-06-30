@@ -459,7 +459,7 @@ if [[ -f "$PROJECT_DIR/docent-check-keys.service"  ]]; then
     -v group="$SUDO_USER" \
     -v wd="$PROJECT_DIR/backend" \
     -v env_path="$PROJECT_DIR/backend/.venv/bin" \
-    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/python3 check_keys" '
+    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/python3 check_keys.py" '
     /^User=/             { printf "User=%s\n", user; next }
     /^Group=/            { printf "Group=%s\n", group; next }
     /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
