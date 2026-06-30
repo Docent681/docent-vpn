@@ -32,13 +32,11 @@ while true; do
             excess=$((count - THRESHOLD))
 
             psql -d "$DB_NAME" -tA \
-                -v type="$type" \
-                -v excess="$excess" \
                 -c "DELETE FROM logs WHERE id IN (
                       SELECT id FROM logs
-                      WHERE type = :'type'
+                      WHERE type = '$type'
                       ORDER BY date ASC
-                      LIMIT :excess
+                      LIMIT $excess
                     );"
         fi
     done
