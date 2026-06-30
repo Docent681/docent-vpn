@@ -110,8 +110,8 @@ sudo ~/docent-vpn/uninstall.sh
 ```
 
 ## Веб-интерфейс
-![Панель-администратора](./screenshots/admin_dashboard.png)
-
+![Панель-администратора](./screenshots/admin_dashboard.jpg)
+![Панель-администратора2](./screenshots/admin_dashboard2.jpg)
 ![Панель-пользователя](./screenshots/user_dashboard.png)
 
 После установки можно использовать веб-интерфейс в вашем браузере, обратившись по Ip вашего сервера.
