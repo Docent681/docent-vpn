@@ -467,39 +467,25 @@ def admin_give_key():
         return {"success": False, "message": f"Пользователь '{username}' не подтверждён"}, 400
 
     # Создаём ключи
-    created_keys = 0
-    for i in range(key_amount_int):
+    for i in range(int(key_amount)):
         keyname = f"{key_name}{i}"
         resp = create_key(name=keyname)
         if resp != 1:
-            try:
-                new_key = Key()
-                new_key.set_id(resp['id'])
-                new_key.set_keyname_name(resp['name'])
-                
-                # Добавляем префикс, если есть
-                prefix = ''
-                if hasattr(Config, 'PREFIXES') and Config.PREFIXES:
-                    prefix_index = randint(0, len(Config.PREFIXES) - 1)
-                    prefix = Config.PREFIXES[prefix_index]
-                
-                new_key.set_keyname(resp['accessUrl'] + prefix)
-                new_key.set_username(username)
-                db.session.add(new_key)
-                created_keys += 1
-            except Exception as e:
-                write_log(current_admin, f"Ошибка сохранения ключа: {e}", "keys_info")
-                break
+            prefix_index = randint(0, Config.PREFIXES[-1] - 1)
+            new_key = Key()
+            new_key.set_id(resp['id'])
+            new_key.set_keyname_name(resp['name'])
+            new_key.set_keyname(resp['accessUrl'] + str(Config.PREFIXES[prefix_index]))
+            new_key.set_username(username)
+            db.session.add(new_key)
         else:
-            write_log(current_admin, f"Ошибка создания ключа для {username}", "keys_info")
-            break
-
-    if created_keys > 0:
-        db.session.commit()
-        write_log(current_admin, f"Выдал {created_keys} ключей пользователю '{username}' (группа: {key_name})", "admin_info")
-        return {"success": True, "message": f"Выдано {created_keys} ключей пользователю '{username}'"}, 200
+            write_log(current_admin, f"Ошибка создания ключа для пользователя {username}", "admin_info")
+            return {"success": False, "message": "Возникли ошибки при создании ключей"}, 400
     else:
-        return {"success": False, "message": "Не удалось создать ни одного ключа"}, 400
+        # Если цикл завершился без break
+        db.session.commit()
+        write_log(current_admin, f"Выдал {key_amount} ключей пользователю '{username}' (группа: {key_name})", "admin_info")
+        return {"success": True, "message": f"Выдано {key_amount} ключей пользователю '{username}'"}, 200
 
 # ------------------------------------------------------------
 # Ответ на запрос пользователя
