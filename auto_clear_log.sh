@@ -22,9 +22,7 @@ fi
 # Основной цикл
 while true; do
     for type in "${TYPES[@]}"; do
-        count=$(psql -d "$DB_NAME" -tA \
-            -v type="$type" \
-            -c "SELECT COUNT(*) FROM logs WHERE type = :'type';")
+        count=$(psql -d "$DB_NAME" -tA -c "SELECT COUNT(*) FROM logs WHERE type = '$type';")
 
         if [ -z "$count" ]; then
             continue
