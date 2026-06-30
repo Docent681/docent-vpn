@@ -1,0 +1,15 @@
+[Unit]
+Description=Docent VPN Flask backend
+After=network.target postgresql.service
+
+[Service]
+User=
+Group=
+WorkingDirectory=
+Environment=
+ExecStart=
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
