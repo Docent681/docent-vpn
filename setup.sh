@@ -273,20 +273,25 @@ if command -v psql &>/dev/null; then
         # Добавляем api_url и outline_secret_path из /opt/outline/access.txt
         if [[ -f /opt/outline/access.txt ]]; then
             API_URL_FULL=$(sed -n '2p' /opt/outline/access.txt | sed 's/^apiUrl:[[:space:]]*//')
+            SHA=$(sed -n '1p' /opt/outline/access.txt | sed 's/^certSha256:[[:space:]]*//')
 
             HOST_PORT=$(echo "$API_URL_FULL" | awk -F/ '{print $3}')
             PORT=$(echo "$HOST_PORT" | cut -d: -f2)
             API_BASE="https://127.0.0.1:${PORT}"
             SECRET_PATH=$(echo "$API_URL_FULL" | sed -E 's|https?://[^/]+/||')
+            FULL_API="{\"apiUrl\":\"$API_URL_FULL\",\"certSha256\":\"$SHA\"}"
 
             echo "api_url $API_BASE" >> "$PROJECT_DIR/envy.conf"
             echo "outline_secret_path $SECRET_PATH" >> "$PROJECT_DIR/envy.conf"
+            echo "full_api $FULL_API" >> "$PROJECT_DIR/envy.conf"
+
         else
             echo "/opt/outline/access.txt не найден, api_url и outline_secret_path не записаны. Не забудьте добавить данные вручную в envy.conf"
         fi
 
         echo "is_sendgrid_cooked $IS_SENDGRID_COOKED" >> "$PROJECT_DIR/envy.conf"
         echo "sendgrid_api $SENDGRID_API" >> "$PROJECT_DIR/envy.conf"
+
 
         echo "Создаем новую роль и базу данных в PostgreSQL..."
         sudo -u postgres psql -c "CREATE ROLE $SQL_USER WITH LOGIN PASSWORD '$SQL_USER_PASSWORD';" &>> "$LOGFILE"
@@ -423,7 +428,7 @@ fi
 
 echo "Конфигурация Python-окружения завершена."
 
-#Создание службы в systemd
+#Создание служб в systemd
 echo "Организуем автозапуск сервера через systemd..."
 if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
     awk -v user="$SUDO_USER" \
@@ -446,6 +451,54 @@ if [[ -f "$PROJECT_DIR/docent-vpn.service"  ]]; then
     echo "автозапуск сервера был успешно настроен"
 else
     echo "В проекте не найден файл docent-vpn.service. Пропускаем конфигурацию автозапуска"
+fi
+
+echo "Организуем автозапуск проверки ключей через systemd..."
+if [[ -f "$PROJECT_DIR/docent-check-keys.service"  ]]; then
+    awk -v user="$SUDO_USER" \
+    -v group="$SUDO_USER" \
+    -v wd="$PROJECT_DIR/backend" \
+    -v env_path="$PROJECT_DIR/backend/.venv/bin" \
+    -v exec_cmd="$PROJECT_DIR/backend/.venv/bin/python3 check_keys" '
+    /^User=/             { printf "User=%s\n", user; next }
+    /^Group=/            { printf "Group=%s\n", group; next }
+    /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
+    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
+    /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
+    { print }
+' "$PROJECT_DIR/docent-check-keys.service" > "$PROJECT_DIR/docent-check-keys.service.tmp" && mv "$PROJECT_DIR/docent-check-keys.service.tmp" "$PROJECT_DIR/docent-check-keys.service"
+    cp "$PROJECT_DIR/docent-check-keys.service" /etc/systemd/system/docent-check-keys.service
+
+    systemctl daemon-reload &>> "$LOGFILE"
+    systemctl enable --now docent-check-keys &>> "$LOGFILE"
+
+    echo "автозапуск проверки ключей был успешно настроен"
+else
+    echo "В проекте не найден файл docent-check-keys.service. Пропускаем конфигурацию автозапуска"
+fi
+
+echo "Организуем автозапуск проверки логов через systemd..."
+if [[ -f "$PROJECT_DIR/docent-check-logs.service"  ]]; then
+    awk -v user="$SUDO_USER" \
+    -v group="$SUDO_USER" \
+    -v wd="$PROJECT_DIR/backend" \
+    -v env_path="/bin/bash" \
+    -v exec_cmd="$PROJECT_DIR/auto_clear_log.sh" '
+    /^User=/             { printf "User=%s\n", user; next }
+    /^Group=/            { printf "Group=%s\n", group; next }
+    /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
+    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
+    /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
+    { print }
+' "$PROJECT_DIR/docent-check-logs.service" > "$PROJECT_DIR/docent-check-logs.service.tmp" && mv "$PROJECT_DIR/docent-check-logs.service.tmp" "$PROJECT_DIR/docent-check-logs.service"
+    cp "$PROJECT_DIR/docent-check-logs.service" /etc/systemd/system/docent-check-logs.service
+
+    systemctl daemon-reload &>> "$LOGFILE"
+    systemctl enable --now docent-check-logs &>> "$LOGFILE"
+
+    echo "автозапуск проверки логов был успешно настроен"
+else
+    echo "В проекте не найден файл docent-check-logs.service. Пропускаем конфигурацию автозапуска"
 fi
 
 
