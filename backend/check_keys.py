@@ -16,10 +16,19 @@ def main():
             new_key.username = "OutlineManager"
             db.session.add(new_key)
 
-            db.session.commit()
+    db_keys = Key.query.all()
+    for db_key in db_keys:
+        for key in keys:
+            if db_key.keyidentity == key[0]:
+                break
+            else:
+                db.session.delete(db_key)
+
+    db.session.commit()
+
 
 if __name__ == '__main__':
     with app.app_context():
         while True:
             main()
-            sleep(900)
+            sleep(300)
