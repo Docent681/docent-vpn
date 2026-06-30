@@ -13,6 +13,7 @@ def main():
             new_key = Key()
             new_key.keyidentity = key[0]
             new_key.keyname = key[1]
+            new_key.id = key[2]
             new_key.username = "OutlineManager"
             db.session.add(new_key)
 

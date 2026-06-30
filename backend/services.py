@@ -69,6 +69,7 @@ def create_key(name=None, method=None, password=None, port=None, limit_bytes=Non
 
     return error
 
+# функция для получения списка реальных ключей outline
 def get_keys():
     url_base = f"{Config.API_URL}"
     token = f"{Config.OUTLINE_SECRET_PATH}"
@@ -85,7 +86,7 @@ def get_keys():
         res = res['accessKeys']
         keynames = []
         for key in res:
-            keynames.append([key['name'], key['accessUrl']])
+            keynames.append([key['name'], key['accessUrl'], key['id']])
 
     except requests.RequestException as e:
         error = 1
