@@ -5,6 +5,30 @@
     .verify-container {
         max-width: 480px;
     }
+
+    /* ===== ИНФО ТЕКСТ ===== */
+    .info-text {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8) !important;  /* ✅ Явно белый с прозрачностью */
+        font-size: 15px;
+        line-height: 1.7;
+        margin-bottom: 28px;
+        padding: 18px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(4px);
+    }
+
+    .info-text .email-highlight {
+        color: #a78bfa;
+        font-weight: 600;
+    }
+
+    .info-text .email-highlight {
+        color: #a78bfa;
+        font-weight: 600;
+    }
 </style>
 {% endblock %}
 
@@ -33,7 +57,8 @@
 
         <!-- INFO TEXT -->
         <div class="info-text" id="infoText">
-            📧 На вашу почту был отправлен код подтверждения.<br>
+            📧 На вашу почту <span class="email-highlight">{{ email or '****@****' }}</span> 
+            был отправлен код подтверждения.<br>
             Пожалуйста, введите его ниже
         </div>
 
