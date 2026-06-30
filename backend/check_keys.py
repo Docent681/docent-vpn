@@ -21,8 +21,8 @@ def main():
         for key in keys:
             if db_key.keyidentity == key[0]:
                 break
-            else:
-                db.session.delete(db_key)
+        else:
+            db.session.delete(db_key)
 
     db.session.commit()
 
