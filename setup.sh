@@ -481,13 +481,11 @@ echo "Организуем автозапуск проверки логов че
 if [[ -f "$PROJECT_DIR/docent-check-logs.service"  ]]; then
     awk -v user="$SUDO_USER" \
     -v group="$SUDO_USER" \
-    -v wd="$PROJECT_DIR/backend" \
-    -v env_path="/bin/bash" \
+    -v wd="$PROJECT_DIR" \
     -v exec_cmd="$PROJECT_DIR/auto_clear_log.sh" '
     /^User=/             { printf "User=%s\n", user; next }
     /^Group=/            { printf "Group=%s\n", group; next }
     /^WorkingDirectory=/ { printf "WorkingDirectory=%s\n", wd; next }
-    /^Environment="PATH=/{ printf "Environment=\"PATH=%s\"\n", env_path; next }
     /^ExecStart=/        { printf "ExecStart=%s\n", exec_cmd; next }
     { print }
 ' "$PROJECT_DIR/docent-check-logs.service" > "$PROJECT_DIR/docent-check-logs.service.tmp" && mv "$PROJECT_DIR/docent-check-logs.service.tmp" "$PROJECT_DIR/docent-check-logs.service"
